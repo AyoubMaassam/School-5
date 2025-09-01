@@ -152,7 +152,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 if (data.status === 'already_registered') {
+                    // Show the main error message first
                     showNotification(data.message || 'مسجل بالفعل', 'error', 3000, '/static/sounds/sound3.mp3');
+                    // If there's also a payment status message (i.e., it was unpaid), show it as a warning
+                    if (data.payment_status_message) {
+                        setTimeout(() => {
+                            showNotification(data.payment_status_message, 'warning', 3000, '/static/sounds/sound2.mp3');
+                        }, 500); // Delay the second notification slightly
+                    }
                 } else {
                     showNotification(data.message || 'خطأ غير معروف', 'error', 3000, '/static/sounds/sound4.mp3');
                 }
