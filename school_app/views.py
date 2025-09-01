@@ -1365,7 +1365,32 @@ def api_record_attendance(request):
             }, status=200)
 
         attendance.present = True
+
+        # --- Payment Logic ---
+        payment_status_message = "الحصة غير مدفوعة" # Default message
+        group = session.group
+        price_per_session = Decimal('0.00')
+
+        if group.price_per_4_sessions and group.price_per_4_sessions > 0:
+            price_per_session = group.price_per_4_sessions / Decimal('4.0')
+
+        if price_per_session > 0:
+            if not attendance.student_paid_for_session and student.prepaid_balance >= price_per_session:
+                student.prepaid_balance -= price_per_session
+                attendance.student_paid_for_session = True
+                student.save(update_fields=['prepaid_balance'])
+                payment_status_message = f"تم الدفع من الرصيد المسبق. الرصيد المتبقي: {student.prepaid_balance.quantize(Decimal('0.01'))} دج"
+            elif attendance.student_paid_for_session:
+                payment_status_message = "الحصة مدفوعة بالفعل"
+            else: # Not enough balance
+                payment_status_message = f"رصيد غير كافٍ. الرصيد الحالي: {student.prepaid_balance.quantize(Decimal('0.01'))} دج"
+        elif attendance.student_paid_for_session:
+             payment_status_message = "الحصة مدفوعة بالفعل"
+        else: # Price is zero
+             payment_status_message = "الحصة مجانية (السعر 0)"
+
         attendance.save()
+
 
         # Calculate unpaid sessions for the student in this group
         try:
@@ -1389,7 +1414,7 @@ def api_record_attendance(request):
             'message': 'تم تسجيل الحضور بنجاح.',
             'student_name': student.full_name,
             'session_info': f'{session.group.name} - {session.date} {session.start_time.strftime("%H:%M")}',
-            'payment_status': 'غير مدفوع (افتراضي)',
+            'payment_status': payment_status_message, # Use the dynamic message
             'attendance_time': attendance.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             'unpaid_sessions_count': unpaid_sessions_count
         }, status=201)
@@ -2261,6 +2286,32 @@ def api_record_attendance_by_student(request):
         # If the record was newly created OR if it existed but the student was marked absent,
         # we now mark them as present.
         attendance.present = True
+
+        # --- Payment Logic ---
+        payment_status_message = "الحصة غير مدفوعة" # Default message
+        group = target_session.group
+        price_per_session = Decimal('0.00')
+
+        if group.price_per_4_sessions and group.price_per_4_sessions > 0:
+            price_per_session = group.price_per_4_sessions / Decimal('4.0')
+
+        if price_per_session > 0:
+            # Check if student has enough balance and session is not already paid
+            if not attendance.student_paid_for_session and student.prepaid_balance >= price_per_session:
+                student.prepaid_balance -= price_per_session
+                attendance.student_paid_for_session = True
+                student.save(update_fields=['prepaid_balance'])
+                payment_status_message = f"تم الدفع من الرصيد المسبق. الرصيد المتبقي: {student.prepaid_balance.quantize(Decimal('0.01'))} دج"
+            elif attendance.student_paid_for_session:
+                payment_status_message = "الحصة مدفوعة بالفعل"
+            else: # Not enough balance
+                payment_status_message = f"رصيد غير كافٍ. الرصيد الحالي: {student.prepaid_balance.quantize(Decimal('0.01'))} دج"
+        elif attendance.student_paid_for_session:
+             payment_status_message = "الحصة مدفوعة بالفعل"
+        else: # Price is zero
+             payment_status_message = "الحصة مجانية (السعر 0)"
+
+
         attendance.save()
 
         auto_excused_message = ""
@@ -2295,8 +2346,7 @@ def api_record_attendance_by_student(request):
                 excused_absence=False
             ).count()
 
-        # We will just return the status based on the default created value
-        payment_status_message = "الحصة غير مدفوعة" if not attendance.student_paid_for_session else ""
+
 
         return JsonResponse({
             'status': 'success',
