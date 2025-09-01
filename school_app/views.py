@@ -105,11 +105,9 @@ def add_student(request):
 
         # Validation
         if not full_name: error_messages.append("الاسم الكامل مطلوب.")
-        if not phone_number: error_messages.append("رقم هاتف الطالب مطلوب.")
         # Basic phone validation (e.g., starts with 0, 10 digits) - adapt as needed
         if phone_number and (not phone_number.isdigit() or not len(phone_number) == 10 or not phone_number.startswith('0')):
             error_messages.append("رقم هاتف الطالب غير صالح (يجب أن يكون 10 أرقام ويبدأ بـ 0).")
-        if not guardian_phone: error_messages.append("رقم هاتف الولي مطلوب.")
         if guardian_phone and (not guardian_phone.isdigit() or not len(guardian_phone) == 10 or not guardian_phone.startswith('0')):
             error_messages.append("رقم هاتف الولي غير صالح (يجب أن يكون 10 أرقام ويبدأ بـ 0).")
 
@@ -448,10 +446,8 @@ def edit_student(request, student_id):
 
         # Validation (similar to add_student, adapt as needed)
         if not full_name: error_messages.append("الاسم الكامل مطلوب.")
-        if not phone_number: error_messages.append("رقم هاتف الطالب مطلوب.")
         if phone_number and (not phone_number.isdigit() or not len(phone_number) == 10 or not phone_number.startswith('0')):
             error_messages.append("رقم هاتف الطالب غير صالح (يجب أن يكون 10 أرقام ويبدأ بـ 0).")
-        if not guardian_phone: error_messages.append("رقم هاتف الولي مطلوب.")
         if guardian_phone and (not guardian_phone.isdigit() or not len(guardian_phone) == 10 or not guardian_phone.startswith('0')):
             error_messages.append("رقم هاتف الولي غير صالح (يجب أن يكون 10 أرقام ويبدأ بـ 0).")
 
@@ -766,8 +762,9 @@ def group_list(request):
         groups_qs = groups_qs.filter(
             Q(name__icontains=query) |
             Q(subject__name__icontains=query) |
-            Q(teacher__full_name__icontains=query)
-        )
+            Q(teacher__full_name__icontains=query) |
+            Q(academic_levels__name__icontains=query)
+        ).distinct()
 
     groups = groups_qs.order_by('name')
     context = {

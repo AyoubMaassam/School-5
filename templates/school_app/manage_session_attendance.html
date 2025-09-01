@@ -53,7 +53,7 @@
             {% for student_data in student_attendance_list %}
               <tr>
                 <td>{{ forloop.counter }}</td>
-                <td>{{ student_data.student_name }}</td>
+                <td><a href="{% url 'student_detail' student_data.student_id %}">{{ student_data.student_name }}</a></td>
                 <td class="text-center">
                   <div class="custom-control custom-checkbox">
                     <input type="checkbox" class="custom-control-input" id="student_{{ student_data.student_id }}_present" name="student_{{ student_data.student_id }}_present" value="on" {% if student_data.is_present %}checked{% endif %}>

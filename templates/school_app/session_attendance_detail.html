@@ -11,7 +11,7 @@
         <div class="card-body">
             <p><strong>الفوج:</strong> {{ session.group.name }}</p>
             <p><strong>المادة:</strong> {{ session.group.subject.name }}</p>
-            <p><strong>المدرس:</strong> {{ session.group.teacher.first_name }} {{ session.group.teacher.last_name }}</p>
+            <p><strong>المدرس:</strong> {{ session.group.teacher.full_name }}</p>
             <p><strong>التاريخ:</strong> {{ session.date }}</p>
             <p><strong>الوقت:</strong> {{ session.start_time }}</p>
         </div>
@@ -25,7 +25,7 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for student in present_students %}
-                        <li class="list-group-item">{{ student.first_name }} {{ student.last_name }}</li>
+                        <li class="list-group-item"><a href="{% url 'student_detail' student.id %}">{{ student.full_name }}</a></li>
                     {% empty %}
                         <li class="list-group-item">لا يوجد طلاب حاضرون.</li>
                     {% endfor %}
@@ -39,7 +39,7 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for student in absent_students %}
-                        <li class="list-group-item">{{ student.first_name }} {{ student.last_name }}</li>
+                        <li class="list-group-item"><a href="{% url 'student_detail' student.id %}">{{ student.full_name }}</a></li>
                     {% empty %}
                         <li class="list-group-item">لا يوجد طلاب غائبون.</li>
                     {% endfor %}
@@ -53,7 +53,7 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for student in excused_students %}
-                        <li class="list-group-item">{{ student.first_name }} {{ student.last_name }}</li>
+                        <li class="list-group-item"><a href="{% url 'student_detail' student.id %}">{{ student.full_name }}</a></li>
                     {% empty %}
                         <li class="list-group-item">لا توجد غيابات معذورة.</li>
                     {% endfor %}

@@ -29,8 +29,8 @@ class Subject(models.Model):
 
 class Student(models.Model):
     full_name = models.CharField(max_length=201, verbose_name="الاسم الكامل")
-    phone_number = models.CharField(max_length=20, unique=True, verbose_name="رقم هاتف الطالب")
-    guardian_phone = models.CharField(max_length=20, verbose_name="رقم هاتف الولي")
+    phone_number = models.CharField(max_length=20, null=True, blank=True, verbose_name="رقم هاتف الطالب")
+    guardian_phone = models.CharField(max_length=20, null=True, blank=True, verbose_name="رقم هاتف الولي")
     birth_day = models.IntegerField(verbose_name="يوم الميلاد")
     birth_month = models.IntegerField(verbose_name="شهر الميلاد")
     birth_year = models.IntegerField(verbose_name="سنة الميلاد")
