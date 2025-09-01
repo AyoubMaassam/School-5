@@ -1357,11 +1357,17 @@ def api_record_attendance(request):
         )
 
         if not created and attendance.present:
+            # The student was already marked as present. Check payment status to inform the frontend.
+            payment_status = "الحصة مدفوعة بالفعل"
+            if not attendance.student_paid_for_session:
+                payment_status = "الحصة لم تدفع بعد"
+
             return JsonResponse({
                 'status': 'already_registered',
                 'message': f'الطالب {student.full_name} مسجل بالفعل في هذه الحصة.',
                 'student_name': student.full_name,
-                'session_info': f'{session.group.name} - {session.date} {session.start_time.strftime("%H:%M")}'
+                'session_info': f'{session.group.name} - {session.date} {session.start_time.strftime("%H:%M")}',
+                'payment_status': payment_status
             }, status=200)
 
         attendance.present = True
@@ -2275,12 +2281,18 @@ def api_record_attendance_by_student(request):
         )
 
         if not created and attendance.present:
-            # The student was already marked as present, this is a true "already registered" case
+            # The student was already marked as present. Check payment status to inform the frontend.
+            payment_status_message = "الحصة مدفوعة بالفعل"
+            if not attendance.student_paid_for_session:
+                # This is the key change: inform the user that the session is still unpaid.
+                payment_status_message = "الحصة لم تدفع بعد"
+
             return JsonResponse({
                 'status': 'already_registered',
                 'message': f'الطالب {student.full_name} مسجل بالفعل في هذه الحصة.',
                 'student_name': student.full_name,
-                'session_info': f'{target_session.group.name} - {target_session.date}'
+                'session_info': f'{target_session.group.name} - {target_session.date}',
+                'payment_status_message': payment_status_message
             }, status=200)
 
         # If the record was newly created OR if it existed but the student was marked absent,
