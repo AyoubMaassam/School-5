@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل الطالب في فوج - {{ student.full_name }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">تسجيل الطالب/ة: {{ student.full_name }}</h2>
+    <p class="card-subtitle mb-2 text-muted">المستوى الدراسي: {{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</p>
+  </div>
+  <div class="card-body">
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="mb-4">
+      <h4>الأفواج المسجل بها حالياً:</h4>
+      {% if enrolled_groups %}
+        <ul class="list-group">
+          {% for group in enrolled_groups %}
+            <li class="list-group-item">
+              {{ group.name }} ({{ group.subject.name }}) - المدرس: {{ group.teacher.full_name }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">الطالب غير مسجل في أي فوج حالياً.</p>
+      {% endif %}
+    </div>
+
+    <hr>
+
+    <h4 class="mt-4">تسجيل في أفواج جديدة:</h4>
+    {% if available_groups %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <p>اختر الأفواج لتسجيل الطالب بها:</p>
+          <div class="row">
+            {% for group in available_groups %}
+              <div class="col-md-6 col-lg-4 mb-2">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="group_{{ group.id }}" name="groups_to_enroll" value="{{ group.id }}">
+                  <label class="custom-control-label" for="group_{{ group.id }}">
+                    <strong>{{ group.name }}</strong> ({{ group.subject.name }})<br>
+                    <small>المدرس: {{ group.teacher.full_name }}</small><br>
+                    <small>التوقيت: يوم {{ group.get_session_day_display }} الساعة {{ group.session_start_time|time:"H:i" }} ({{ group.session_duration }} ساعات)</small><br>
+                    <small>السعر لـ4 حصص: {{ group.price_per_4_sessions|floatformat:0 }} دج</small>
+                  </label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">
+          <i class="fas fa-check-circle"></i> تسجيل في الأفواج المختارة
+        </button>
+      </form>
+    {% else %}
+      <p class="text-info">لا توجد أفواج جديدة متاحة للتسجيل لهذا الطالب حالياً (إما لعدم تطابق المستوى الدراسي أو لأنه مسجل بالفعل في كل الأفواج المتاحة).</p>
+    {% endif %}
+
+    <div class="mt-4">
+      <a href="{% url 'student_detail' student.id %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> العودة إلى ملف الطالب
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

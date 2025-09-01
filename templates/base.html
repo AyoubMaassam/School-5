@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}نظام إدارة مدرسة معصم - جمعية النجوم الثقافية{% endblock %}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+  {% block extra_css %}{% endblock %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <!-- Include any other custom CSS files here -->
+
+</head>
+<body>
+  <div class="main-layout">
+    <!-- Mobile backdrop -->
+    <div class="mobile-backdrop" id="mobile-backdrop"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <img src="https://cdn-icons-png.freepik.com/512/2602/2602414.png" alt="Logo">
+          <span>مدرسة معصم</span>
+        </div>
+      </div>
+      
+      <nav>
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+              <i class="fas fa-home"></i>
+              <span>الرئيسية</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/students/" class="nav-link {% if 'students' in request.path %}active{% endif %}">
+              <i class="fas fa-user-graduate"></i>
+              <span>الطلاب</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/teachers/" class="nav-link {% if 'teachers' in request.path %}active{% endif %}">
+              <i class="fas fa-chalkboard-teacher"></i>
+              <span>المدرسين</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/groups/" class="nav-link {% if 'groups' in request.path %}active{% endif %}">
+              <i class="fas fa-users"></i>
+              <span>الأفواج</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/sessions/" class="nav-link {% if 'sessions' in request.path %}active{% endif %}">
+              <i class="fas fa-clock"></i>
+              <span>الحصص</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/attendance/" class="nav-link {% if request.path == '/attendance/' %}active{% endif %}">
+              <i class="fas fa-clipboard-check"></i>
+              <span>تسجيل الحضور</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'attendance_record' %}" class="nav-link {% if request.path == '/attendance/record/' %}active{% endif %}">
+              <i class="fas fa-calendar-alt"></i>
+              <span>سجل الحضور</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/payments/report/" class="nav-link {% if 'payments/report' in request.path %}active{% endif %}">
+              <i class="fas fa-chart-line"></i>
+              <span>التقارير المالية</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'action_log_list' %}" class="nav-link {% if 'financial-reports/logs' in request.path %}active{% endif %}">
+              <i class="fas fa-history"></i>
+              <span>سجل الإجراءات</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+    
+    <!-- Main content -->
+    <main class="main-content" id="main-content">
+      <div class="content-header">
+        <button class="menu-toggle" id="sidebar-toggle">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="page-title">{% block page_title %}نظام إدارة مدرسة معسم{% endblock %}</h1>
+        <div class="header-actions">
+          {% if request.path != '/' %}
+          <a href="/" class="back-to-home">
+            <i class="fas fa-arrow-right"></i>
+            <span>العودة للرئيسية</span>
+          </a>
+          {% endif %}
+          
+          {% block header_actions %}{% endblock %}
+          
+          <button id="theme-toggle-btn" class="btn btn-outline-secondary">
+            <i id="theme-icon-sun" class="fas fa-sun"></i>
+            <i id="theme-icon-moon" class="fas fa-moon"></i>
+          </button>
+          
+        </div>
+      </div>
+      
+      {% if messages %}
+        <div class="django-messages-container" style="padding: 0 var(--spacing-md); margin-bottom: var(--spacing-md);">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div id="alert-container"></div>
+      
+      <div class="content-body">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+  
+
+  <script>
+    // Enhanced JavaScript for sidebar functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('main-content');
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+      const mobileBackdrop = document.getElementById('mobile-backdrop');
+      const themeToggleBtn = document.getElementById('theme-toggle-btn');
+      const themeIconSun = document.getElementById('theme-icon-sun');
+      const themeIconMoon = document.getElementById('theme-icon-moon');
+      
+      let isMobile = window.innerWidth < 992;
+      let sidebarOpen = !isMobile;
+
+      // Initialize sidebar state
+      function initializeSidebar() {
+        if (isMobile) {
+          sidebar.classList.add('collapsed');
+          mainContent.classList.add('expanded');
+          mobileBackdrop.classList.remove('active');
+        } else {
+          sidebar.classList.remove('collapsed');
+          mainContent.classList.remove('expanded');
+          mobileBackdrop.classList.remove('active');
+        }
+      }
+
+      // Toggle sidebar
+      function toggleSidebar() {
+        sidebarOpen = !sidebarOpen;
+        
+        if (isMobile) {
+          if (sidebarOpen) {
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.add('open');
+            mobileBackdrop.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          } else {
+            sidebar.classList.add('collapsed');
+            sidebar.classList.remove('open');
+            mobileBackdrop.classList.remove('active');
+            document.body.style.overflow = '';
+          }
+        } else {
+          if (sidebarOpen) {
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('expanded');
+          } else {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+          }
+        }
+      }
+
+      // Close sidebar on mobile
+      function closeSidebar() {
+        if (isMobile && sidebarOpen) {
+          sidebarOpen = false;
+          sidebar.classList.add('collapsed');
+          sidebar.classList.remove('open');
+          mobileBackdrop.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+      }
+
+      // Handle window resize
+      function handleResize() {
+        const wasMobile = isMobile;
+        isMobile = window.innerWidth < 992;
+        
+        if (wasMobile !== isMobile) {
+          sidebarOpen = !isMobile;
+          initializeSidebar();
+          document.body.style.overflow = '';
+        }
+      }
+
+      // Auto-dismiss alerts
+      function initializeAlerts() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+          const closeBtn = alert.querySelector('.close');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+              alert.style.opacity = '0';
+              alert.style.transform = 'translateY(-10px)';
+              setTimeout(() => {
+                alert.remove();
+              }, 300);
+            });
+          }
+          
+          // Auto-dismiss after 5 seconds
+          setTimeout(() => {
+            if (alert.parentNode) {
+              alert.style.opacity = '0';
+              alert.style.transform = 'translateY(-10px)';
+              setTimeout(() => {
+                alert.remove();
+              }, 300);
+            }
+          }, 5000);
+        });
+      }
+
+      // Add smooth scrolling to navigation links
+      function initializeNavigation() {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+          link.addEventListener('click', function() {
+            // Close sidebar on mobile when navigating
+            if (isMobile) {
+              setTimeout(closeSidebar, 150);
+            }
+          });
+        });
+      }
+
+      // Event listeners
+      sidebarToggle.addEventListener('click', toggleSidebar);
+      mobileBackdrop.addEventListener('click', closeSidebar);
+      themeToggleBtn.addEventListener('click', toggleTheme);
+      window.addEventListener('resize', handleResize);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+        // Toggle sidebar with Ctrl/Cmd + B
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+          e.preventDefault();
+          toggleSidebar();
+        }
+        
+        // Toggle theme with Ctrl/Cmd + Shift + T
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+          e.preventDefault();
+          toggleTheme();
+        }
+        
+        // Close sidebar with Escape key
+        if (e.key === 'Escape' && isMobile && sidebarOpen) {
+          closeSidebar();
+        }
+      });
+
+      // Initialize everything
+      initializeSidebar();
+      initializeTheme();
+      initializeAlerts();
+      initializeNavigation();
+
+      // Add loading animation to cards
+      const cards = document.querySelectorAll('.card');
+      cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
+      });
+    });
+
+    // Utility function for showing alerts
+    function showAlert(message, type = 'info') {
+      const alertContainer = document.getElementById('alert-container');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} alert-dismissible fade show`;
+      alert.innerHTML = `
+        ${message}
+        <button type="button" class="close" onclick="this.parentElement.remove()">
+          <span>&times;</span>
+        </button>
+      `;
+      
+      alertContainer.appendChild(alert);
+      
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.style.opacity = '0';
+          alert.style.transform = 'translateY(-10px)';
+          setTimeout(() => alert.remove(), 300);
+        }
+      }, 5000);
+    }
+  </script>
+
+
+
+  <script src="/static/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

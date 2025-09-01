@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إيصال دفع</title>
+    <style>
+        body {
+            font-family: 'DejaVu Sans', 'Arial', sans-serif; /* DejaVu Sans for Arabic characters */
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .receipt-container {
+            width: 80mm; /* Standard thermal printer width */
+            max-width: 400px; /* Max width for larger screens */
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.3em; /* Increased size */
+            color: #333;
+        }
+        .item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1em; /* Increased size */
+        }
+        .item .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .item .value {
+            color: #333;
+            text-align: left; /* Align values to the left for LTR feel within RTL */
+        }
+        .sessions-list {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-size: 0.9em; /* Increased size */
+        }
+        .sessions-list ul {
+            list-style-type: none;
+            padding-right: 0; /* Adjusted for RTL */
+            margin: 0;
+        }
+        .sessions-list li {
+            padding: 3px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .sessions-list li:last-child {
+            border-bottom: none;
+        }
+        .total-section {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #999;
+        }
+        .barcode-placeholder {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+            margin: 15px 0;
+            font-size: 0.9em; /* Increased size */
+        }
+        .footer-notes {
+            text-align: center;
+            font-size: 0.9em; /* Increased size */
+            color: #555;
+            margin-top: 15px;
+        }
+        .footer-notes p {
+            margin: 3px 0;
+        }
+
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+                display: block; /* Override flex for printing */
+            }
+            .receipt-container {
+                width: 100%; /* Use full available width for printing */
+                max-width: none;
+                border: none;
+                box-shadow: none;
+                padding: 5px; /* Minimal padding for print */
+                font-size: 11pt; /* Increased size for thermal printers */
+            }
+            .header h1 {
+                font-size: 1.2em; /* Adjust for print */
+            }
+            .item, .sessions-list, .barcode-placeholder, .footer-notes {
+                font-size: 0.95em; /* Adjust for print */
+            }
+            /* Hide print button if it exists in a non-print version */
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>جمعية النجوم الثقافية</h1>
+            <p style="font-size: 0.85em; margin: 5px 0;">إيصال دفع</p>
+        </div>
+
+        <div class="item">
+            <span class="label">اسم التلميذ:</span>
+            <span class="value">{{ student.full_name }}</span>
+        </div>
+        <div class="item">
+            <span class="label">الفوج:</span>
+            <span class="value">{{ group.name }}</span>
+        </div>
+        <div class="item">
+            <span class="label">سعر الـ 4 حصص:</span>
+            <span class="value">{{ group.price_per_4_sessions|floatformat:2 }} دج</span>
+        </div>
+         <div class="item">
+            <span class="label">سعر الحصة الواحدة:</span>
+            <span class="value">{{ price_per_session|floatformat:2 }} دج</span>
+        </div>
+        <div class="item">
+            <span class="label">تاريخ الدفع:</span>
+            <span class="value">{{ print_date|date:"Y-m-d H:i" }}</span>
+        </div>
+
+        {% if paid_sessions %}
+        <div class="sessions-list">
+            <strong>الحصص المدفوعة في هذه العملية:</strong>
+            <ul>
+                {% for session in paid_sessions %}
+                    <li>{{ session.date|date:"Y-m-d" }} ({{ session.start_time|time:"H:i" }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="total-section">
+            {% if prepaid_used > 0 %}
+            <div class="item">
+                <span class="label">المبلغ المدفوع (نقداً/بطاقة):</span>
+                <span class="value">{{ amount_paid_cash_card|floatformat:2 }} دج</span>
+            </div>
+            <div class="item">
+                <span class="label">المبلغ المستخدم من الرصيد المسبق:</span>
+                <span class="value">{{ prepaid_used|floatformat:2 }} دج</span>
+            </div>
+            {% endif %}
+            <div class="item" style="font-size: 1.1em;"> <!-- Larger font for total -->
+                <span class="label">إجمالي المبلغ المعتمد للحصص:</span>
+                <span class="value"><strong>{{ total_credited_for_sessions|floatformat:2 }} دج</strong></span>
+            </div>
+        </div>
+
+        <div class="barcode-placeholder">
+            [ مكان طباعة الرمز الشريطي (Code Bar / Barcode Here) ]
+        </div>
+
+        <div class="footer-notes">
+            <p>الغيابات تُحسب على التلميذ.</p>
+            <p>نشكركم على الدراسة في مقر الجمعية.</p>
+        </div>
+    </div>
+
+    <script type_text="text/javascript">
+      // Optional: Automatically trigger print dialog
+      // window.onload = function() {
+      //     window.print();
+      // }
+    </script>
+</body>
+</html>

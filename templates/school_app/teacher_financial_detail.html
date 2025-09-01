@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}
+التفاصيل المالية للمدرس: {{ teacher.full_name }}
+{% endblock %}
+
+{% block page_title %}التفاصيل المالية للمدرس: {{ teacher.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">ملخص المستحقات المالية</h4>
+        </div>
+        <div class="card-body">
+            <p class="lead">
+                <strong>المدرس:</strong> {{ teacher.full_name }}
+            </p>
+            <p class="lead">
+                <strong>إجمالي عدد الحصص غير المدفوعة التي حضرها المدرس:</strong>
+                <span class="badge bg-warning text-dark fs-5">{{ total_uncompensated_sessions_count }}</span> حصة
+            </p>
+
+            {% if total_uncompensated_sessions_count > 0 %}
+                <p class="mt-3">لتسوية هذه المستحقات، يرجى الانتقال إلى صفحة دفع المستحقات.</p>
+                <a href="{% url 'teacher_monthly_payment' teacher_id=teacher.id %}" class="btn btn-success btn-lg mt-2">
+                    <i class="bi bi-cash-coin"></i> الذهاب إلى صفحة دفع المستحقات
+                </a>
+            {% else %}
+                <p class="mt-3 text-success"><i class="bi bi-check-circle-fill"></i> لا توجد حالياً أي حصص مستحقة للدفع لهذا المدرس.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if groups_with_uncompensated_sessions %}
+        <h3 class="mb-3 mt-5">تفاصيل الحصص غير المدفوعة حسب الفوج:</h3>
+        {% for group_info in groups_with_uncompensated_sessions %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5>الفوج: {{ group_info.group_name }} <small class="text-muted">({{ group_info.subject_name }})</small></h5>
+                </div>
+                <div class="card-body">
+                    {% if group_info.sessions %}
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center active bg-secondary text-white">
+                                <span>التاريخ</span>
+                                <span>وقت البدء</span>
+                                <span>المدة (ساعة)</span>
+                            </li>
+                            {% for session in group_info.sessions %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ session.date|date:"Y-m-d" }}</span>
+                                    <span>{{ session.start_time }}</span>
+                                    <span>{{ session.duration }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>لا توجد حصص غير مدفوعة لهذا الفوج.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <hr class="my-4">
+
+    <div class="mt-4">
+        <a href="{% url 'teacher_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-right"></i> العودة إلى قائمة المدرسين
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة الأفواج{% endblock %}
+{% block page_title %}{{ page_title|default:"قائمة الأفواج" }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'add_group' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> إضافة فوج جديد
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="get" action="{% url 'group_list' %}" class="mb-3">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="ابحث باسم الفوج, المادة, أو المدرس..." value="{{ search_query|default:'' }}">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="submit">
+            <i class="fas fa-search"></i> بحث
+          </button>
+        </div>
+      </div>
+    </form>
+    {% if groups %}
+      <div class="table-container">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>اسم الفوج</th>
+              <th>المادة</th>
+              <th>المعلم</th>
+            <th>المستويات الدراسية</th>
+              <th>عدد الطلاب</th>
+              <th>السعر (لـ4 حصص)</th>
+              <th>تاريخ الإضافة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for group in groups %}
+              <tr>
+                <td>{{ group.name }}</td>
+                <td>{{ group.subject.name }}</td>
+                <td>{{ group.teacher.full_name }}</td>
+            <td>
+              {% for level in group.academic_levels.all %}
+                {{ level.name }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                لا يوجد
+              {% endfor %}
+            </td>
+                <td>{{ group.students.count }}</td>
+            <td>{{ group.price_per_4_sessions|floatformat:"-2" }} دج</td>
+                <td>{{ group.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                  <a href="{% url 'group_detail' group.id %}" class="btn btn-sm btn-info" title="عرض التفاصيل"> <i class="bi bi-eye-fill"></i><span class="sr-only">عرض التفاصيل</span></a>
+                  <a href="{% url 'edit_group' group.id %}" class="btn btn-sm btn-warning" title="تعديل"> <i class="bi bi-pencil-fill"></i><span class="sr-only">تعديل</span></a>
+                  <form action="{% url 'delete_group' group.id %}" method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف هذا الفوج؟ سيتم حذف جميع الحصص المتعلقة به أيضاً.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm" title="حذف"><i class="bi bi-trash-fill"></i><span class="sr-only">حذف</span></button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-center text-muted">لا توجد أفواج مسجلة حالياً.</p>
+      <div class="text-center mt-3">
+         <a href="{% url 'add_group' %}" class="btn btn-primary">إضافة فوج جديد</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}إنشاء فوج جديد{% endblock %}
+
+{% block page_title %}إنشاء فوج جديد{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">معلومات الفوج</h2>
+  </div>
+  <div class="card-body">
+    <form id="group-form" method="POST" action="{% url 'add_group' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="group-name">اسم الفوج</label>
+        <input type="text" id="group-name" name="name" class="form-control" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="subject">المادة</label>
+        <select id="subject" name="subject" class="form-control subject-dropdown subject-dropdown-for-teacher" required>
+          <option value="">اختر المادة</option>
+          <!-- Will be populated dynamically -->
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="teacher">المدرس</label>
+        <select id="teacher" name="teacher" class="form-control teacher-dropdown" required>
+          <option value="">اختر المدرس</option>
+          <!-- Will be populated based on selected subject -->
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="academic-levels">المستويات الدراسية المتوافقة</label>
+        <select id="academic-levels" name="academic_levels" class="form-control academic-level-dropdown" multiple required>
+          <!-- Will be populated dynamically -->
+        </select>
+        <small class="form-text text-muted">اضغط Ctrl (أو Cmd على Mac) لاختيار أكثر من مستوى.</small>
+      </div>
+      
+      <div class="form-group">
+        <label for="price">السعر لكل 4 حصص (بالدينار)</label>
+        <input type="number" id="price" name="price_per_4_sessions" class="form-control" min="0" step="0.01" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="session-day">يوم الحصة الأسبوعية</label>
+        <select id="session-day" name="session_day" class="form-control" required>
+          <option value="">اختر اليوم</option>
+          <option value="0">الاثنين</option>
+          <option value="1">الثلاثاء</option>
+          <option value="2">الأربعاء</option>
+          <option value="3">الخميس</option>
+          <option value="4">الجمعة</option>
+          <option value="5">السبت</option>
+          <option value="6">الأحد</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="start-time">وقت بداية الحصة</label>
+        <input type="time" id="start-time" name="start_time" class="form-control" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="duration">مدة الحصة (بالساعات)</label>
+        <input type="number" id="duration" name="duration" class="form-control" min="0.5" max="3" step="0.5" value="1.5" required>
+      </div>
+
+      <div class="form-group">
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="is_continuous" name="is_continuous">
+          <label class="custom-control-label" for="is_continuous">فوج مستمر (تُنشأ الحصص أسبوعياً تلقائياً)</label>
+        </div>
+      </div>
+      
+      <div class="card-footer text-right">
+        <a href="{% url 'group_list' %}" class="btn btn-secondary">إلغاء</a>
+        <button type="submit" id="create-group-btn" class="btn btn-primary">إنشاء الفوج</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // This script assumes the main.js or another script handles the actual AJAX submission.
+    // This part focuses on ensuring 'is_continuous' is included in the data sent.
+    // If your AJAX submission logic is directly in this template, you'd modify that.
+
+    const groupForm = document.getElementById('group-form');
+    if (groupForm) {
+        groupForm.addEventListener('submit', function(event) {
+            // This is a generic way to show how to add it to a FormData or JSON object.
+            // Your actual AJAX submission logic in main.js might need direct modification.
+            // For example, if main.js reads form fields to build a JSON object:
+
+            // Access the original function if it's globally available or part of an object
+            // This is a placeholder for however your form submission is currently handled.
+            // If it's a direct HTML form post, this JS isn't strictly needed for this field,
+            // but since other parts are dynamic, it's likely AJAX.
+
+            // Example: If your main.js collects data like this:
+            // let formData = { ... };
+            // formData['is_continuous'] = document.getElementById('is_continuous').checked;
+            // Then proceed with fetch/AJAX with this formData.
+
+            // The key is that the part of your JavaScript that gathers the data
+            // to be sent to the server needs to add this line:
+            // dataToSend.is_continuous = document.getElementById('is_continuous').checked;
+            // Where dataToSend is the object being serialized to JSON for the request.
+        });
+    }
+});
+
+// Assuming your existing AJAX submission logic in main.js or similar might look like this:
+// (This is a conceptual example - you'll need to adapt your *actual* JS code)
+//
+// function handleRealFormSubmission(event) {
+//   event.preventDefault();
+//   const form = event.target;
+//   const formData = new FormData(form);
+//   let data = {};
+//   formData.forEach((value, key) => {
+//     if (key === 'academic_levels') { // Example for handling multi-select
+//       if (!data[key]) {
+//         data[key] = [];
+//       }
+//       data[key].push(value);
+//     } else {
+//       data[key] = value;
+//     }
+//   });
+
+//   // *** ADD THIS LINE to your existing data collection logic ***
+//   data.is_continuous = document.getElementById('is_continuous').checked;
+//   // **********************************************************
+
+//   fetch(form.action, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       'X-CSRFToken': data.csrfmiddlewaretoken // Ensure CSRF token is correctly handled
+//     },
+//     body: JSON.stringify(data)
+//   })
+//   .then(response => response.json())
+//   .then(result => {
+//     if (result.status === 'success') {
+//       // Handle success (e.g., redirect)
+//       if(result.redirect_url) window.location.href = result.redirect_url;
+//     } else {
+//       // Handle error (e.g., display messages)
+//       showAlert(result.error, 'danger');
+//     }
+//   })
+//   .catch(error => {
+//     console.error('Error:', error);
+//     showAlert('An unexpected error occurred.', 'danger');
+//   });
+// }
+//
+// And if your form submission is initiated by a button click like create-group-btn:
+// const createBtn = document.getElementById('create-group-btn');
+// if (createBtn) {
+//    createBtn.addEventListener('click', handleRealFormSubmission);
+//    // Or if the form itself is submitted, then form.addEventListener('submit', handleRealFormSubmission);
+// }
+//
+// The important part is to modify the data object before JSON.stringify.
+// The provided `add_group.html` doesn't have the JS for AJAX submission itself,
+// implying it's in a shared `main.js` or similar. That's where the modification to
+// include `is_continuous` needs to happen.
+</script>
+{% endblock %}

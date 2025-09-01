@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إيصال دفع رسوم التسجيل</title>
+    <style>
+        body {
+            font-family: 'DejaVu Sans', 'Arial', sans-serif; /* DejaVu Sans for better Arabic character support in some systems */
+            margin: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .receipt-container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            max-width: 100px; /* Adjust as needed */
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+        .details {
+            margin-bottom: 30px;
+        }
+        .details p {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+        .details strong {
+            display: inline-block;
+            width: 150px; /* Adjust for alignment */
+            color: #555;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 14px;
+            color: #777;
+        }
+        .print-date {
+            text-align: left;
+            font-size: 12px;
+            color: #999;
+        }
+        @media print {
+            body {
+                margin: 0;
+                font-size: 12pt; /* Ensure good readability when printed */
+            }
+            .receipt-container {
+                width: 100%;
+                border: none;
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <img src="https://via.placeholder.com/100" alt="School Logo">
+            <h1>مدرسة معصوم</h1> 
+            <h2>إيصال دفع رسوم التسجيل</h2>
+        </div>
+
+        <div class="details">
+            <p><strong>اسم الطالب:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+            <p><strong>الرقم التعريفي للطالب:</strong> {{ student.id }}</p>
+            <p><strong>المستوى الدراسي:</strong> {{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</p>
+            <hr>
+            <p><strong>المبلغ المدفوع:</strong> {{ REGISTRATION_FEE_AMOUNT|floatformat:2 }} دج</p>
+            <p><strong>تاريخ الدفع (المسجل بالنظام):</strong> {{ student.created_at|date:"Y-m-d" }} (تاريخ تسجيل الطالب)</p>
+        </div>
+
+        <div class="footer">
+            <p>نشكركم على ثقتكم في مدرستنا.</p>
+            <p class="print-date">تاريخ طباعة الإيصال: {{ print_date|date:"Y-m-d H:i" }}</p>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            window.print();
+            // Optional: Close window after print dialog, but can be disruptive.
+            // setTimeout(function(){ window.close(); }, 1000);
+        };
+    </script>
+</body>
+</html>

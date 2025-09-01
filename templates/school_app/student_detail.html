@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}ملف الطالب - {{ student.full_name }}{% endblock %}
+
+{% block page_title %}{{ page_title|default:"ملف الطالب" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message|safe }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">معلومات الطالب</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>الاسم:</strong> {{ student.full_name }}</p>
+            <p><strong>رقم الهاتف:</strong> {{ student.phone_number }}</p>
+            <p><strong>رقم هاتف الولي:</strong> {{ student.guardian_phone }}</p>
+            <p><strong>تاريخ الميلاد:</strong> {{ student.birth_day }}/{{ student.birth_month }}/{{ student.birth_year }}</p>
+            <p><strong>المستوى الدراسي:</strong> {{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</p>
+            <p><strong>رقم البطاقة:</strong> {{ student.card_number }}</p>
+            <p><strong>الرصيد المدفوع مقدماً العام:</strong> <span class="badge badge-success">{{ student.prepaid_balance|floatformat:2 }} دج</span></p>
+            <p><strong>رسوم التسجيل مدفوعة:</strong> {% if student.registration_fee_paid %}<span class="badge badge-success">نعم</span>{% else %}<span class="badge badge-danger">لا</span>{% endif %}</p>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'edit_student' student.id %}" class="btn btn-info"><i class="fas fa-edit"></i> تعديل بيانات الطالب</a>
+            <a href="{% url 'student_monthly_payment' student.id %}" class="btn btn-primary"><i class="fas fa-money-check-alt"></i> الذهاب إلى صفحة الدفع الشهري</a>
+            <a href="{% url 'enroll_student_in_groups' student.id %}" class="btn btn-success"><i class="fas fa-plus-circle"></i> تسجيل الطالب في أفواج جديدة</a>
+            <a href="{% url 'print_student_qr_code' student.id %}" class="btn btn-secondary" target="_blank"><i class="fas fa-qrcode"></i> طباعة QR Code</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">الأفواج المسجل بها وحالة الدفع</h3>
+        </div>
+        <div class="card-body">
+            {% if enrolled_groups_with_payment_stats %}
+                {% for group_stat in enrolled_groups_with_payment_stats %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                <a href="{% url 'group_detail' group_stat.group_id %}">{{ group_stat.group_name }}</a>
+                                 - <small>{{ group_stat.subject_name }} ({{ group_stat.teacher.full_name }})</small>
+                            </h5>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                سعر الـ 4 حصص:
+                                <span class="badge badge-secondary badge-pill">{{ group_stat.price_per_4_sessions|floatformat:2 }} دج</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                إجمالي الحصص (حتى اليوم):
+                                <span class="badge badge-info badge-pill">{{ group_stat.total_sessions_in_group }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                الحصص المدفوعة:
+                                <span class="badge badge-success badge-pill">{{ group_stat.paid_sessions_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                الحصص غير المدفوعة (وغير معذورة):
+                                <span class="badge badge-danger badge-pill">{{ group_stat.unpaid_non_excused_sessions_count }}</span>
+                            </li>
+                             <li class="list-group-item d-flex justify-content-between align-items-center">
+                                الحصص المدفوعة المسبقة المتبقية (للاستخدام المستقبلي في هذا الفوج):
+                                <span class="badge badge-primary badge-pill">{{ group_stat.remaining_future_paid_sessions_for_group }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                الغيابات المعذورة:
+                                <span class="badge badge-warning badge-pill">{{ group_stat.excused_absences_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                المبلغ المستحق لهذا الفوج:
+                                <span class="badge badge-danger badge-pill">{{ group_stat.amount_due_for_group|floatformat:2 }} دج</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                حالة الدفع:
+                                {% if group_stat.payment_status_display == "مدفوع بالكامل" %}
+                                    <span class="badge badge-success">{{ group_stat.payment_status_display }}</span>
+                                {% elif group_stat.payment_status_display == "غير مدفوع" or group_stat.payment_status_display == "مدفوع جزئياً" %}
+                                    <span class="badge badge-warning">{{ group_stat.payment_status_display }}</span>
+                                {% else %}
+                                    <span class="badge badge-info">{{ group_stat.payment_status_display }}</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                        <div class="card-body">
+                             <h6 class="card-subtitle mb-2 text-muted">تفاصيل الحضور والدفع:</h6>
+                             <ul class="list-unstyled small">
+                                <li>حاضر ومدفوع: {{ group_stat.attended_and_paid_count }}</li>
+                                <li>حاضر وغير مدفوع: {{ group_stat.attended_not_paid_count }}</li>
+                                <li>غائب ومدفوع: {{ group_stat.absent_and_paid_count }}</li>
+                                <li>غائب وغير مدفوع: {{ group_stat.absent_not_paid_count }}</li>
+                             </ul>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-info">الطالب غير مسجل حالياً في أي فوج.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3 class="card-title">سجل الحضور الشامل</h3>
+        </div>
+        <div class="card-body">
+            {% if attendance_records %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الوقت</th>
+                            <th>الفوج</th>
+                            <th>المادة</th>
+                            <th>حالة الحضور</th>
+                            <th>حالة الدفع</th>
+                            <th>غياب معذور</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for att in attendance_records %}
+                        <tr>
+                            <td>{{ att.session.date|date:"Y-m-d" }}</td>
+                            <td>{{ att.session.start_time|time:"H:i" }}</td>
+                            <td><a href="{% url 'group_detail' att.session.group.id %}">{{ att.session.group.name }}</a></td>
+                            <td>{{ att.session.group.subject.name }}</td>
+                            <td>
+                                {% if att.present %}
+                                    <span class="badge badge-success">حاضر</span>
+                                {% else %}
+                                    <span class="badge badge-danger">غائب</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if att.student_paid_for_session %}
+                                    <span class="badge badge-success">مدفوع</span>
+                                {% else %}
+                                    <span class="badge badge-warning">غير مدفوع</span>
+                                {% endif %}
+                            </td>
+                             <td>
+                                {% if att.excused_absence %}
+                                    <span class="badge badge-info">نعم</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">لا</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not att.present and not att.excused_absence %}
+                                    <form action="{% url 'mark_absence_excused' student.id att.id %}" method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">عذر الغياب</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p>لا يوجد سجل حضور لهذا الطالب بعد.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any specific JS for this page if needed in the future
+</script>
+{% endblock %}

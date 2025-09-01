@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة الطلاب{% endblock %}
+{% block page_title %}{{ page_title|default:"قائمة الطلاب" }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'add_student' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> إضافة طالب جديد
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="get" action="{% url 'student_list' %}" class="mb-3">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="ابحث بالاسم, الهاتف, أو رقم البطاقة..." value="{{ search_query|default:'' }}">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="submit">
+            <i class="fas fa-search"></i> بحث
+          </button>
+        </div>
+      </div>
+    </form>
+    {% if students %}
+      <div class="table-container">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>الاسم الكامل</th>
+              <th>رقم البطاقة</th>
+              <th>رقم الهاتف</th>
+              <th>المستوى الدراسي</th>
+              <th>تاريخ الإضافة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+              <tr>
+                <td>{{ student.full_name }}</td>
+                <td>{{ student.card_number|default:"N/A" }}</td>
+                <td dir="ltr">{{ student.phone_number }}</td>
+                <td>{{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</td>
+                <td>{{ student.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                  <a href="{% url 'student_detail' student.id %}" class="btn btn-sm btn-info" title="عرض التفاصيل"> <i class="bi bi-eye-fill"></i><span class="sr-only">عرض التفاصيل</span></a>
+                  <a href="{% url 'edit_student' student.id %}" class="btn btn-sm btn-warning" title="تعديل"> <i class="bi bi-pencil-fill"></i><span class="sr-only">تعديل</span></a>
+                  <a href="{% url 'student_monthly_payment' student_id=student.id %}" class="btn btn-sm btn-primary" title="الدفع الشهري"><i class="bi bi-credit-card-fill"></i><span class="sr-only">الدفع الشهري</span></a>
+                  <form action="{% url 'delete_student' student.id %}" method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف هذا الطالب؟ قد يؤدي هذا إلى حذف سجلات الحضور والمدفوعات المتعلقة به بشكل دائم.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm" title="حذف"><i class="bi bi-trash-fill"></i><span class="sr-only">حذف</span></button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-center text-muted">لا يوجد طلاب مسجلون حالياً.</p>
+      <div class="text-center mt-3">
+         <a href="{% url 'add_student' %}" class="btn btn-primary">إضافة طالب جديد</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

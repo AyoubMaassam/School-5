@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة حصة جديدة{% endblock %}
+{% block page_title %}{{ page_title|default:"إضافة حصة جديدة" }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">إضافة حصة جديدة</h5>
+        <form method="post">
+            {% csrf_token %}
+
+            {# Assuming 'groups' is passed in context for the dropdown #}
+            <div class="form-group">
+                <label for="id_group">الفوج:</label>
+                <select name="group" id="id_group" class="form-control" required>
+                    {% for group_item in groups %} {# Changed loop variable to avoid conflict with 'group' model instance if any #}
+                        <option value="{{ group_item.id }}" {% if group_item.id == selected_group_id %}selected{% endif %}>{{ group_item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="id_date">التاريخ:</label>
+                <input type="date" name="date" id="id_date" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="id_start_time">وقت البدء:</label>
+                <input type="time" name="start_time" id="id_start_time" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="id_duration">المدة (ساعات):</label>
+                <input type="number" name="duration" step="0.25" id="id_duration" value="1.5" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">حفظ الحصة</button>
+            <a href="{% url 'session_list' %}" class="btn btn-secondary">إلغاء والعودة إلى قائمة الحصص</a>
+        </form>
+    </div>
+</div>
+
+{# We might want to add JavaScript for date/time pickers or dynamic group loading later #}
+{% endblock %}

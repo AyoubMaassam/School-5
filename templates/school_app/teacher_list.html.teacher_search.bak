@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة المعلمين{% endblock %}
+{% block page_title %}{{ page_title|default:"قائمة المعلمين" }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'add_teacher' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> إضافة معلم جديد
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    {% if teachers %}
+      <div class="table-container">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>الاسم الكامل</th>
+              <th>رقم الهاتف</th>
+              <th>المادة الأساسية</th>
+              <th>تاريخ الإضافة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for teacher in teachers %}
+              <tr>
+                <td>{{ teacher.first_name }} {{ teacher.last_name }}</td>
+                <td dir="ltr">{{ teacher.phone_number }}</td>
+                <td>{{ teacher.subject.name }}</td>
+                <td>{{ teacher.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                  {# <a href="#" class="btn btn-sm btn-info">عرض</a> Placeholder for future teacher_detail view #}
+                  <a href="{% url 'edit_teacher' teacher.id %}" class="btn btn-sm btn-warning">تعديل</a>
+                  <form action="{% url 'delete_teacher' teacher.id %}" method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف هذا المدرس؟ قد يؤدي هذا إلى مشاكل إذا كان المدرس مرتبطاً بأفواج حالية.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm">حذف</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-center text-muted">لا يوجد معلمون مسجلون حالياً.</p>
+      <div class="text-center mt-3">
+         <a href="{% url 'add_teacher' %}" class="btn btn-primary">إضافة معلم جديد</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

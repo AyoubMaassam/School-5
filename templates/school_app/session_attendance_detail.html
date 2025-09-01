@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">{{ page_title }}</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>تفاصيل الحصة</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>الفوج:</strong> {{ session.group.name }}</p>
+            <p><strong>المادة:</strong> {{ session.group.subject.name }}</p>
+            <p><strong>المدرس:</strong> {{ session.group.teacher.first_name }} {{ session.group.teacher.last_name }}</p>
+            <p><strong>التاريخ:</strong> {{ session.date }}</p>
+            <p><strong>الوقت:</strong> {{ session.start_time }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4>قائمة الحضور ({{ present_students.count }})</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for student in present_students %}
+                        <li class="list-group-item">{{ student.first_name }} {{ student.last_name }}</li>
+                    {% empty %}
+                        <li class="list-group-item">لا يوجد طلاب حاضرون.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4>قائمة الغياب ({{ absent_students.count }})</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for student in absent_students %}
+                        <li class="list-group-item">{{ student.first_name }} {{ student.last_name }}</li>
+                    {% empty %}
+                        <li class="list-group-item">لا يوجد طلاب غائبون.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4>غيابات معذورة ({{ excused_students.count }})</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for student in excused_students %}
+                        <li class="list-group-item">{{ student.first_name }} {{ student.last_name }}</li>
+                    {% empty %}
+                        <li class="list-group-item">لا توجد غيابات معذورة.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'session_list' %}" class="btn btn-secondary">العودة إلى قائمة الحصص</a>
+    </div>
+</div>
+{% endblock %}

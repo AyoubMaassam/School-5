@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}تسجيل الحضور{% endblock %}
+
+{% block page_title %}{{ page_title|default:"تسجيل الحضور" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.notification-area {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1050;
+    width: 350px;
+}
+.notification-toast {
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity 0.5s, transform 0.5s;
+    transform: translateX(100%);
+}
+.notification-toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+.notification-toast.success { background-color: #28a745; }
+.notification-toast.error { background-color: #dc3545; }
+.notification-toast.warning { background-color: #ffc107; color: #000; }
+.notification-toast.info { background-color: #17a2b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="notification-area" class="notification-area"></div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">تسجيل الحضور التلقائي</h2>
+  </div>
+  <div class="card-body">
+    <div class="form-group">
+      <label for="scan-input">امسح بطاقة الطالب أو أدخل الرقم/الاسم:</label>
+      <input type="text" id="scan-input" name="student_identifier" class="form-control form-control-lg" placeholder="في انتظار المسح..." autofocus>
+    </div>
+    <div class="attendance-instructions mt-4">
+      <h3>تعليمات:</h3>
+      <ul>
+        <li>بمجرد مسح البطاقة، سيتم تسجيل الحضور تلقائياً لأقرب حصة متاحة للطالب (في نطاق ساعتين قبل وبعد بداية الحصة).</li>
+        <li>لا حاجة للضغط على أي زر.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Multiple Sessions Modal -->
+<div id="multiple-sessions-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">حصص متعددة متاحة</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body" id="modal-body-content">
+            <!-- Session list will be injected here -->
+        </div>
+        <div class="modal-footer">
+            <button id="confirm-sessions-btn" class="btn btn-primary">تأكيد الحضور</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const scanInput = document.getElementById('scan-input');
+    const notificationArea = document.getElementById('notification-area');
+    const csrftoken = getCookie('csrftoken');
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showNotification(message, type = 'info', duration = 2000, soundUrl = null) {
+        if (soundUrl) {
+            const audio = new Audio(soundUrl);
+            audio.play().catch(e => console.error("Error playing sound:", e));
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `notification-toast ${type}`;
+        toast.textContent = message;
+        notificationArea.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 500);
+        }, duration);
+    }
+
+    async function handleAttendanceScan() {
+        const identifier = scanInput.value.trim();
+        if (!identifier) return;
+
+        scanInput.disabled = true;
+
+        try {
+            const response = await fetch('/api/attendance/record_by_student/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: JSON.stringify({ student_identifier: identifier }),
+            });
+            const data = await response.json();
+
+            if (data.status === 'multiple_sessions_found') {
+                displaySessionChoiceModal(data.sessions, data.student_id);
+            } else if (response.ok) {
+                if (data.payment_status_message) {
+                    // Successful attendance, but unpaid. Show success message (no sound), then warning with sound.
+                    showNotification(`${data.message}`, 'success', 1500);
+                    setTimeout(() => {
+                        showNotification(data.payment_status_message, 'warning', 1500, '/static/sounds/sound2.mp3');
+                    }, 500);
+                } else {
+                    // Clean success. Play the success sound.
+                    showNotification(`${data.message}`, 'success', 1500, '/static/sounds/sound1.mp3');
+                }
+            } else {
+                if (data.status === 'already_registered') {
+                    showNotification(data.message || 'مسجل بالفعل', 'error', 3000, '/static/sounds/sound3.mp3');
+                } else {
+                    showNotification(data.message || 'خطأ غير معروف', 'error', 3000, '/static/sounds/sound4.mp3');
+                }
+            }
+        } catch (error) {
+            console.error('Error recording attendance:', error);
+            showNotification('فشل الاتصال بالخادم.', 'error', 3000, '/static/sounds/sound4.mp3');
+        } finally {
+            if (document.getElementById('multiple-sessions-modal').style.display !== 'block') {
+                scanInput.value = '';
+                scanInput.disabled = false;
+                scanInput.focus();
+            }
+        }
+    }
+
+    function displaySessionChoiceModal(sessions, studentId) {
+        const modal = document.getElementById('multiple-sessions-modal');
+        const modalBody = document.getElementById('modal-body-content');
+        const confirmBtn = document.getElementById('confirm-sessions-btn');
+        const closeModalBtn = modal.querySelector('.close-modal');
+
+        modalBody.innerHTML = '<p>الرجاء تحديد الحصص التي سيحضرها الطالب:</p>';
+        const form = document.createElement('form');
+        sessions.forEach(session => {
+            const div = document.createElement('div');
+            div.className = 'form-check';
+            div.innerHTML = `
+                <input class="form-check-input" type="checkbox" value="${session.id}" id="session-${session.id}">
+                <label class="form-check-label" for="session-${session.id}">
+                    ${session.group_name} - ${session.subject_name} (${session.start_time})
+                </label>
+            `;
+            form.appendChild(div);
+        });
+        modalBody.appendChild(form);
+
+        modal.style.display = 'block';
+
+        const closeAndReset = () => {
+            modal.style.display = 'none';
+            modalBody.innerHTML = '';
+            scanInput.value = '';
+            scanInput.disabled = false;
+            scanInput.focus();
+        }
+
+        closeModalBtn.onclick = closeAndReset;
+
+        confirmBtn.onclick = async () => {
+            const selectedSessions = [];
+            form.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedSessions.push(checkbox.value);
+            });
+
+            if (selectedSessions.length === 0) {
+                showNotification('الرجاء اختيار حصة واحدة على الأقل.', 'error', 3000, '/static/sounds/sound4.mp3');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/attendance/record_bulk/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        session_ids: selectedSessions
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showNotification(data.message, 'success', 2000, '/static/sounds/sound1.mp3');
+                } else {
+                    showNotification(data.message || 'خطأ في تسجيل الحضور', 'error', 3000, '/static/sounds/sound4.mp3');
+                }
+            } catch (error) {
+                showNotification('فشل الاتصال بالخادم.', 'error', 3000, '/static/sounds/sound4.mp3');
+            } finally {
+                closeAndReset();
+            }
+        };
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeAndReset();
+            }
+        }
+    }
+
+    let scanTimeout = null;
+    scanInput.addEventListener('input', function(event) {
+        clearTimeout(scanTimeout);
+        const identifier = scanInput.value.trim();
+
+        // We can check for a minimum length to avoid firing on every keystroke
+        // For example, if card numbers are at least 5 characters long.
+        if (identifier.length >= 5) {
+            scanTimeout = setTimeout(() => {
+                handleAttendanceScan();
+            }, 50); // Wait 50ms after the last input to ensure the full barcode is scanned
+        }
+    });
+
+    scanInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            clearTimeout(scanTimeout); // Prevent double submission
+            handleAttendanceScan();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}الدفع الشهري للطالب - {{ student.full_name }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message|safe }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if receipt_url %}
+    <div class="alert alert-success" role="alert">
+      تمت عملية الدفع بنجاح! <a href="{{ receipt_url }}" target="_blank" class="alert-link"><strong>اطبع الوصل من هنا</strong></a>.
+      <br><small>(سيتم فتح الوصل في نافذة جديدة)</small>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">معلومات الطالب</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>الاسم:</strong> {{ student.full_name }}</p>
+            <p><strong>المستوى الدراسي:</strong> {{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">اختيار الفوج وتفاصيل الدفع</h3>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'student_monthly_payment' student.id %}" class="mb-3">
+                <div class="form-row align-items-end">
+                    <div class="col-md-8">
+                        <label for="group_id_select">اختر الفوج:</label>
+                        <select name="group_id" id="group_id_select" class="form-control" onchange="this.form.submit()">
+                            <option value="">--- اختر فوجاً ---</option>
+                            {% for group_item in enrolled_groups %}
+                                <option value="{{ group_item.id }}" {% if selected_group and selected_group.id == group_item.id %}selected{% endif %}>
+                                    {{ group_item.name }} ({{ group_item.subject.name }} - {{ group_item.teacher.full_name }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mt-2 mt-md-0">
+                        <noscript><button type="submit" class="btn btn-primary btn-block">عرض الفوج</button></noscript>
+                    </div>
+                </div>
+            </form>
+
+            {% if selected_group %}
+                <hr>
+                <h4>تفاصيل الفوج: {{ selected_group.name }}</h4>
+                <p><strong>المادة:</strong> {{ selected_group.subject.name }}</p>
+                <p><strong>المدرس:</strong> {{ selected_group.teacher.full_name }}</p>
+                <p><strong>سعر الـ 4 حصص:</strong> {{ selected_group.price_per_4_sessions|floatformat:2 }} دج (يعني {{ price_per_session|floatformat:2 }} دج للحصة الواحدة)</p>
+
+                <div class="my-3 p-3 bg-light border rounded">
+                    <h5>الرصيد المسبق للطالب:</h5>
+                    <p><strong>الرصيد الحالي (دج):</strong> <span class="badge badge-info" style="font-size: 1rem;">{{ student_prepaid_balance|floatformat:2 }} دج</span></p>
+                    {% if price_per_session > 0 %}
+                    <p><strong>يعادل تقريباً (حصص مسبقة الدفع):</strong> <span class="badge badge-primary" style="font-size: 1rem;">{{ prepaid_sessions_count }}</span> حصص لهذا الفوج</p>
+                    {% endif %}
+                </div>
+
+                <h5 class="mt-4">حصص الطالب المعنية بالدفع أو التبرير (الأقدم أولاً إذا كانت القائمة طويلة):</h5>
+                {% if sessions_display %}
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>التاريخ والوقت</th>
+                                <th>حالة الحضور</th>
+                                <th>حالة الدفع</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s_info in sessions_display %}
+                            <tr>
+                                <td>{{ s_info.date|date:"Y-m-d" }} {{ s_info.time|time:"H:i" }}</td>
+                                <td>
+                                    {% if s_info.status == "حاضر" %} <span class="badge badge-success">حاضر</span>
+                                    {% elif s_info.status == "غائب" %} <span class="badge badge-danger">غائب</span>
+                                    {% elif s_info.status == "غياب معذور" %} <span class="badge badge-warning">غياب معذور</span>
+                                    {% else %} <span class="badge badge-secondary">{{ s_info.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if s_info.is_paid %} <span class="badge badge-success">مدفوعة</span>
+                                    {% else %} <span class="badge badge-danger">غير مدفوعة</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if s_info.can_be_excused %}
+                                    <form method="POST" action="{% url 'student_monthly_payment' student.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="mark_excused">
+                                        <input type="hidden" name="group_id" value="{{ selected_group.id }}">
+                                        <input type="hidden" name="session_id" value="{{ s_info.session_id }}">
+                                        <button type="submit" class="btn btn-warning btn-sm" title="تسجيل كغياب معذور">عذر</button>
+                                    </form>
+                                    {% elif s_info.is_excused %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted">لا توجد حصص بحاجة للدفع أو التبرير لهذا الفوج حالياً بناءً على تاريخ التحاق الطالب.</p>
+                {% endif %}
+
+                <h5 class="mt-3">إجمالي المبلغ المطلوب (قبل خصم الرصيد المسبق): <span class="text-secondary font-weight-bold">{{ gross_amount_due|floatformat:2 }} دج</span></h5>
+                {% if student_prepaid_balance > 0 and gross_amount_due > 0 %}
+                    <p class="text-info">سيتم استخدام رصيدك المدفوع مقدماً ({{ student_prepaid_balance|floatformat:2 }} دج) لتغطية جزء من هذا المبلغ.</p>
+                {% endif %}
+                <h5 class="mt-1">المبلغ الصافي المستحق حالياً للدفع: <span class="text-danger font-weight-bold">{{ net_amount_due|floatformat:2 }} دج</span></h5>
+
+                <p class="text-muted small">(المبلغ المطلوب يحسب بناءً على جميع الحصص الغير مدفوعة والتي لم يتم تسجيلها كغياب معذور للطالب في هذا الفوج منذ تاريخ التحاقه الفعلي، مع مراعاة الرصيد المدفوع مقدماً.)</p>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">تسديد الدفعات</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{% url 'student_monthly_payment' student.id %}" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="process_payment">
+                            <input type="hidden" name="group_id" value="{{ selected_group.id }}">
+                            <div class="form-group">
+                                <label for="amount_paid">المبلغ المدفوع نقداً/بالبطاقة الآن:</label>
+                                <input type="number" name="amount_paid" id="amount_paid" class="form-control" step="0.01" min="0" placeholder="أدخل المبلغ المدفوع (إن وجد)" {% if net_amount_due == 0 %}value="0"{% endif %} required>
+                                {% if net_amount_due == 0 and student.prepaid_balance >= gross_amount_due and gross_amount_due > 0 %}
+                                    <small class="form-text text-success">الرصيد المدفوع مقدماً يغطي كامل المبلغ المطلوب لهذه المجموعة. يمكنك ترك المبلغ المدفوع 0 إذا كنت لا ترغب في إضافة المزيد إلى الرصيد المسبق.</small>
+                                {% elif net_amount_due == 0 and gross_amount_due == 0 %}
+                                    <small class="form-text text-info">لا توجد مبالغ مستحقة حالياً لهذا الفوج.</small>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-dollar-sign"></i> دفع وتحديث الرصيد
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">تخفيض الرصيد المسبق يدوياً</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted">استخدم هذا الخيار إذا أردت خصم عدد معين من الحصص من الرصيد المسبق للطالب لهذا الفوج (مثلاً، إذا تم الاتفاق على استخدام الرصيد المسبق لحصص لم تسجل إلكترونياً).</p>
+                        <form method="POST" action="{% url 'student_monthly_payment' student.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="reduce_prepaid_balance">
+                            <input type="hidden" name="group_id" value="{{ selected_group.id }}">
+                            <div class="form-group">
+                                <label for="sessions_to_reduce_count">عدد الحصص لتخفيضها من الرصيد المسبق:</label>
+                                <input type="number" name="sessions_to_reduce_count" id="sessions_to_reduce_count" class="form-control" min="1" required>
+                            </div>
+                             <p class="small">سيتم خصم مبلغ يعادل قيمة هذه الحصص من الرصيد المسبق للطالب لهذا الفوج.</p>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-minus-circle"></i> تخفيض الرصيد
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            {% else %}
+                {% if request.GET.group_id %}
+                    <p class="text-danger">الفوج المحدد غير موجود أو الطالب غير مسجل فيه.</p>
+                {% else %}
+                    <p class="text-info">الرجاء اختيار فوج لعرض تفاصيل الدفع.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-3">
+      <a href="{% url 'student_detail' student.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> العودة إلى ملف الطالب
+      </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent multiple submissions for POST forms
+    const postForms = document.querySelectorAll('form[method="POST"]');
+    postForms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton && !submitButton.hasAttribute('data-submitted')) {
+                submitButton.disabled = true;
+                submitButton.setAttribute('data-submitted', 'true'); // Mark as submitted
+            } else if (submitButton && submitButton.hasAttribute('data-submitted')) {
+                event.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

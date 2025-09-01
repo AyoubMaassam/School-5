@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}دفع مستحقات المدرس - {{ teacher.first_name }} {{ teacher.last_name }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'teacher_list' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left"></i> العودة لقائمة المدرسين
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Teacher Information -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">معلومات المدرس</h3>
+    </div>
+    <div class="card-body">
+      <p><strong>الاسم الكامل:</strong> {{ teacher.first_name }} {{ teacher.last_name }}</p>
+      <p><strong>المادة:</strong> {{ teacher.subject.name }}</p>
+      <p><strong>مبلغ التعويض لكل حصة فعلية (افتراضي):</strong> {{ TEACHER_PAY_PER_SESSION_AMOUNT|floatformat:2 }} دج</p>
+    </div>
+  </div>
+
+  <!-- Payment per Group Section -->
+  {% if payment_info_by_group %}
+    <h3 class="mb-3">تفاصيل مستحقات الأفواج</h3>
+    {% for group_info in payment_info_by_group %}
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <h4 class="card-title mb-0">الفوج: {{ group_info.group_name }}</h4>
+          <small class="text-muted">المادة: {{ group_info.subject_name }}</small>
+        </div>
+        <div class="card-body">
+          <div class="payment-summary-grid mb-3">
+              <div><strong>إجمالي الحصص في الفوج:</strong> {{ group_info.total_sessions_in_group }}</div>
+              <div><strong>إجمالي حصص حضرها المدرس:</strong> <span class="font-weight-bold">{{ group_info.teacher_attended_total_count }}</span></div>
+              <div><strong>حصص تم تعويضها:</strong> <span class="text-success font-weight-bold">{{ group_info.compensated_session_count }}</span></div>
+              <div><strong>حصص حضرها وتم تعويضها:</strong> <span class="text-success">{{ group_info.attended_and_compensated_count }}</span></div>
+              <div><strong>حصص حضرها ولم يتم تعويضها:</strong> <span class="text-danger font-weight-bold">{{ group_info.attended_not_compensated_count }}</span></div>
+          </div>
+          
+          {% if group_info.attended_not_compensated_count > 0 %}
+          <form method="post" action="{% url 'teacher_payment' teacher.id %}" class="border p-3 rounded bg-white shadow-sm mb-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="pay_teacher_sessions">
+            <input type="hidden" name="group_id" value="{{ group_info.group_id }}">
+            <div class="form-row align-items-end">
+              <div class="col-md-5 col-sm-7 mb-2">
+                <label for="sessions_to_compensate_{{ group_info.group_id }}">عدد الحصص (التي حضرها المدرس) للدفع:</label>
+                <input type="number" class="form-control" id="sessions_to_compensate_{{ group_info.group_id }}" name="sessions_to_compensate_count" value="{{ group_info.attended_not_compensated_count }}" min="1" max="{{ group_info.attended_not_compensated_count }}">
+              </div>
+              <div class="col-md-auto col-sm-5 mb-2">
+                <button type="submit" class="btn btn-primary btn-block">
+                  <i class="fas fa-hand-holding-usd"></i> دفع المستحقات
+                </button>
+              </div>
+            </div>
+            <small class="form-text text-muted">سيتم دفع المستحقات لأقدم الحصص التي حضرها المدرس ولم يتم تعويضه عنها بعد.</small>
+          </form>
+          {% else %}
+            <p class="alert alert-info"><i class="fas fa-info-circle"></i> لا توجد حصص إضافية حضرها المدرس ومستحقة للدفع حالياً لهذا الفوج.</p>
+          {% endif %}
+
+          <h5 class="mt-4">سجل الحصص للفوج:</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered table-hover" style="font-size: 0.85rem;">
+              <thead class="thead-light">
+                <tr>
+                  <th>#</th>
+                  <th>تاريخ الحصة</th>
+                  <th>وقت البدء</th>
+                  <th>حضور المدرس</th>
+                  <th>حالة التعويض</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for session_detail in group_info.session_details %}
+                  <tr class="{% if not session_detail.teacher_compensated and session_detail.teacher_attended %}table-warning{% elif session_detail.teacher_compensated and not session_detail.teacher_attended %}table-info{% endif %}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ session_detail.date|date:"D, d M Y" }}</td>
+                    <td>{{ session_detail.start_time }}</td>
+                    <td>
+                      {% if session_detail.teacher_attended %}
+                        <span class="badge badge-success">نعم</span>
+                      {% elif session_detail.teacher_attended is None %}
+                        <span class="badge badge-secondary">لم يحدد</span>
+                      {% else %}
+                        <span class="badge badge-danger">لا</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if session_detail.teacher_compensated %}
+                        <span class="badge badge-success">تم التعويض</span>
+                      {% else %}
+                        <span class="badge badge-warning">لم يتم التعويض</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">لا توجد حصص مجدولة لهذا الفوج بعد.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div> <!-- card-body -->
+      </div> <!-- card -->
+    {% endfor %}
+  {% else %}
+    <p class="text-center text-muted lead mt-4">هذا المدرس غير مسجل في أي فوج حالياً أو لا توجد أفواج متاحة.</p>
+  {% endif %}
+</div>
+
+<style>
+  .payment-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  .payment-summary-grid > div {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #e9ecef;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentForms = document.querySelectorAll('form input[name="action"][value="pay_teacher_sessions"]');
+    paymentForms.forEach(hiddenActionInput => {
+        const parentForm = hiddenActionInput.closest('form');
+        if (parentForm) {
+            const sessionsInput = parentForm.querySelector('input[name="sessions_to_compensate_count"]');
+            if (sessionsInput) {
+                sessionsInput.addEventListener('input', function() { // Use 'input' for immediate feedback
+                    const maxSessions = parseInt(this.getAttribute('max'), 10);
+                    const currentValue = parseInt(this.value, 10);
+                    if (currentValue > maxSessions) {
+                        // Using global showAlert if available, otherwise simple alert
+                        if (typeof showAlert === 'function') {
+                            showAlert('لا يمكنك دفع عدد حصص أكثر من الحصص المستحقة.', 'warning');
+                        } else {
+                            alert('لا يمكنك دفع عدد حصص أكثر من الحصص المستحقة.');
+                        }
+                        this.value = maxSessions;
+                    }
+                    if (currentValue < 1 && this.value !== '') {
+                         if (typeof showAlert === 'function') {
+                            showAlert('عدد الحصص للدفع يجب أن يكون 1 أو أكثر.', 'warning');
+                        } else {
+                            alert('عدد الحصص للدفع يجب أن يكون 1 أو أكثر.');
+                        }
+                        this.value = 1;
+                    }
+                });
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

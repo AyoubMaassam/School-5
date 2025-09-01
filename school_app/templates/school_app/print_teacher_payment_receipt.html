@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إيصال دفع مستحقات مدرس</title>
+    <style>
+        body {
+            font-family: 'DejaVu Sans', 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .receipt-container {
+            width: 80mm; /* Standard thermal printer width */
+            max-width: 400px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.3em; /* Increased size */
+            color: #333;
+        }
+        .item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1em; /* Increased size */
+        }
+        .item .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .item .value {
+            color: #333;
+            text-align: left;
+        }
+        .total-section {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #999;
+        }
+        .footer-notes {
+            text-align: center;
+            font-size: 0.9em; /* Increased size */
+            color: #555;
+            margin-top: 15px;
+        }
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+                display: block;
+            }
+            .receipt-container {
+                width: 100%;
+                max-width: none;
+                border: none;
+                box-shadow: none;
+                padding: 5px;
+                font-size: 11pt; /* Increased size */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>جمعية النجوم الثقافية</h1>
+            <p style="font-size: 0.85em; margin: 5px 0;">إيصال دفع مستحقات مدرس</p>
+        </div>
+
+        <div class="details">
+            <div class="item">
+                <span class="label">اسم المدرس:</span>
+                <span class="value">{{ teacher.full_name }}</span>
+            </div>
+            <div class="item">
+                <span class="label">الفوج:</span>
+                <span class="value">{{ group.name }}</span>
+            </div>
+            <div class="item">
+                <span class="label">تاريخ الدفع:</span>
+                <span class="value">{{ print_date|date:"Y-m-d H:i" }}</span>
+            </div>
+        </div>
+
+        <div class="payment-summary">
+            <div class="item">
+                <span class="label">عدد الحصص المدفوعة:</span>
+                <span class="value">{{ total_sessions }}</span>
+            </div>
+            <div class="item">
+                <span class="label">سعر المدرس لكل طالب:</span>
+                <span class="value">{{ price_per_instance|floatformat:2 }} دج</span>
+            </div>
+            <hr>
+            <div class="item">
+                <span class="label">إجمالي الحضور:</span>
+                <span class="value">{{ total_presences }}</span>
+            </div>
+            <div class="item">
+                <span class="label">إجمالي الغيابات المحتسبة:</span>
+                <span class="value">{{ total_absences_counted }}</span>
+            </div>
+             <div class="item">
+                <span class="label">الغيابات المعذورة (غير مدفوعة):</span>
+                <span class="value">{{ excused_absences_count }}</span>
+            </div>
+        </div>
+
+        <div class="total-section">
+            <div class="item" style="font-size: 1.1em;">
+                <span class="label">المبلغ الإجمالي المدفوع:</span>
+                <span class="value"><strong>{{ total_payment_amount|floatformat:2 }} دج</strong></span>
+            </div>
+        </div>
+
+        <div class="footer-notes">
+            <p>شكراً لجهودكم.</p>
+        </div>
+    </div>
+</body>
+</html>

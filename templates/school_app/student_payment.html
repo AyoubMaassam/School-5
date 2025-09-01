@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}مدفوعات الطالب - {{ student.full_name }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'student_detail' student.id %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left"></i> العودة لملف الطالب
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Student Information -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">معلومات الطالب</h3>
+    </div>
+    <div class="card-body">
+      <p><strong>الاسم الكامل:</strong> {{ student.full_name }}</p>
+      <p><strong>المستوى الدراسي:</strong> {{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</p>
+    </div>
+  </div>
+
+  <!-- Registration Fee Section -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">رسوم التسجيل الأولية</h3>
+    </div>
+    <div class="card-body">
+      <p><strong>الحالة:</strong>
+        {% if student.registration_fee_paid %}
+          <span class="badge badge-success p-2">مدفوعة</span>
+        {% else %}
+          <span class="badge badge-danger p-2">غير مدفوعة</span>
+        {% endif %}
+      </p>
+      <p><strong>مبلغ الرسوم:</strong> {{ REGISTRATION_FEE_AMOUNT|floatformat:2 }} دج</p>
+      {% if not student.registration_fee_paid %}
+        <form method="post" action="{% url 'student_payment' student.id %}" class="mt-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="pay_registration_fee">
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check-circle"></i> تأكيد دفع رسوم التسجيل
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Payment per Group Section -->
+  {% if payment_info_by_group %}
+    <h3 class="mb-3">تفاصيل مدفوعات الأفواج</h3>
+    {% for group_info in payment_info_by_group %}
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <h4 class="card-title mb-0">الفوج: {{ group_info.group_name }}</h4>
+          <small class="text-muted">المادة: {{ group_info.subject_name }} | المدرس: {{ group_info.teacher_name }}</small>
+        </div>
+        <div class="card-body">
+          <div class="payment-summary-grid mb-3">
+              <div><strong>سعر 4 حصص:</strong> {{ group_info.price_per_4_sessions|floatformat:2 }} دج</div>
+              <div><strong>إجمالي الحصص:</strong> {{ group_info.total_sessions_in_group }}</div>
+              <div><strong>حصص مدفوعة:</strong> <span class="text-success font-weight-bold">{{ group_info.paid_session_count }}</span></div>
+              <div><strong>حصص غير مدفوعة:</strong> <span class="text-danger font-weight-bold">{{ group_info.unpaid_session_count }}</span></div>
+              <div><strong>حاضر ومدفوع:</strong> {{ group_info.attended_and_paid_count }}</div>
+              <div><strong>حاضر وغير مدفوع:</strong> <span class="text-warning">{{ group_info.attended_not_paid_count }}</span></div>
+              <div><strong>غائب ومدفوع:</strong> {{ group_info.absent_but_paid_count }}</div>
+              <div><strong>غائب وغير مدفوع:</strong> {{ group_info.absent_not_paid_count }}</div>
+          </div>
+
+          {% if group_info.unpaid_session_count > 0 %}
+          <form method="post" action="{% url 'student_payment' student.id %}" class="border p-3 rounded bg-white shadow-sm mb-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="pay_group_sessions">
+            <input type="hidden" name="group_id" value="{{ group_info.group_id }}">
+            <div class="form-row align-items-end">
+              <div class="col-md-4 col-sm-6 mb-2">
+                <label for="sessions_to_pay_{{ group_info.group_id }}">عدد الحصص للدفع:</label>
+                <input type="number" class="form-control" id="sessions_to_pay_{{ group_info.group_id }}" name="sessions_to_pay" value="4" min="1" max="{{ group_info.unpaid_session_count }}">
+              </div>
+              <div class="col-md-auto col-sm-6 mb-2">
+                <button type="submit" class="btn btn-primary btn-block">
+                  <i class="fas fa-dollar-sign"></i> دفع الحصص
+                </button>
+              </div>
+            </div>
+            <small class="form-text text-muted">يمكنك دفع لـ {{ group_info.unpaid_session_count }} حصة/حصص غير مدفوعة كحد أقصى لهذا الفوج.</small>
+          </form>
+          {% else %}
+            <p class="alert alert-success"><i class="fas fa-check-circle"></i> جميع الحصص المجدولة لهذا الفوج مدفوعة.</p>
+          {% endif %}
+
+          <h5 class="mt-4">سجل الحصص للفوج:</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered table-hover" style="font-size: 0.85rem;">
+              <thead class="thead-light">
+                <tr>
+                  <th>#</th>
+                  <th>تاريخ الحصة</th>
+                  <th>وقت البدء</th>
+                  <th>حالة الحضور</th>
+                  <th>حالة الدفع</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for session_detail in group_info.session_details %}
+                  <tr class="{% if not session_detail.is_paid %}table-warning{% elif session_detail.attendance_status == 'غائب' and session_detail.is_paid %}table-info{% endif %}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ session_detail.date|date:"D, d M Y" }}</td>
+                    <td>{{ session_detail.start_time }}</td>
+                    <td>
+                      {% if session_detail.attendance_status == "حاضر" %}
+                        <span class="badge badge-success">{{ session_detail.attendance_status }}</span>
+                      {% elif session_detail.attendance_status == "غائب" %}
+                        <span class="badge badge-danger">{{ session_detail.attendance_status }}</span>
+                      {% else %}
+                        <span class="badge badge-secondary">{{ session_detail.attendance_status }}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if session_detail.is_paid %}
+                        <span class="badge badge-success">مدفوعة</span>
+                      {% else %}
+                        <span class="badge badge-warning">غير مدفوعة</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">لا توجد حصص مجدولة لهذا الفوج بعد.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div> <!-- card-body -->
+      </div> <!-- card -->
+    {% endfor %}
+  {% else %}
+    <p class="text-center text-muted lead mt-4">الطالب غير مسجل في أي فوج حالياً.</p>
+  {% endif %}
+
+  <div class="mt-4">
+      <a href="{% url 'student_list' %}" class="btn btn-secondary">
+        <i class="fas fa-users"></i> العودة إلى قائمة الطلاب
+      </a>
+  </div>
+</div>
+
+<style>
+  .payment-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  .payment-summary-grid > div {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #e9ecef;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentForms = document.querySelectorAll('form input[name="action"][value="pay_group_sessions"]');
+    paymentForms.forEach(hiddenActionInput => { // Iterate over hidden inputs to find parent forms
+        const parentForm = hiddenActionInput.closest('form');
+        if (parentForm) {
+            const sessionsInput = parentForm.querySelector('input[name="sessions_to_pay"]');
+            if (sessionsInput) {
+                sessionsInput.addEventListener('input', function() { // Use 'input' for immediate feedback
+                    const maxSessions = parseInt(this.getAttribute('max'), 10);
+                    const currentValue = parseInt(this.value, 10);
+                    if (currentValue > maxSessions) {
+                        showAlert('لا يمكنك دفع عدد حصص أكثر من الحصص غير المدفوعة المتبقية.', 'warning');
+                        this.value = maxSessions; // Correct to max
+                    }
+                    if (currentValue < 1 && this.value !== '') { // Allow empty input temporarily, but not less than 1 if a value is there
+                        showAlert('عدد الحصص للدفع يجب أن يكون 1 أو أكثر.', 'warning');
+                        this.value = 1; // Correct to min
+                    }
+                });
+            }
+        }
+    });
+});
+
+// Assume showAlert is globally available from main.js or base.html
+// If not, you'd need to define it or ensure it's loaded.
+// function showAlert(message, type) { alert(message); } // Basic placeholder
+</script>
+{% endblock %}

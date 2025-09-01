@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}الرئيسية - نظام إدارة مدرسة معسم{% endblock %}
+
+{% block page_title %}لوحة التحكم{% endblock %}
+
+{% block content %}
+<div class="dashboard-cards slide-in">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class="fas fa-user-graduate"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ students_count }}</div>
+      <div class="stat-label">الطلاب</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color:rgb(35, 230, 139);">
+      <i class="fas fa-chalkboard-teacher"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ teachers_count }}</div>
+      <div class="stat-label">المدرسين</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #5e72e4;">
+      <i class="fas fa-users"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ groups_count }}</div>
+      <div class="stat-label">الأفواج</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #11cdef;">
+      <i class="fas fa-clock"></i>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ sessions_today_count }}</div>
+      <div class="stat-label">الحصص اليوم</div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card mb-4">
+    <div class="card-header">
+      <h2 class="card-title">حصص اليوم</h2>
+    </div>
+    <div class="card-body">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>الوقت</th>
+              <th>الفوج</th>
+              <th>المادة</th>
+              <th>المدرس</th>
+              <th>القاعة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if upcoming_or_ongoing_sessions_today %}
+              {% for session in upcoming_or_ongoing_sessions_today %}
+                <tr>
+                  <td>{{ session.start_time|time:"H:i" }}</td>
+                  <td>{{ session.group.name }}</td>
+                  <td>{{ session.group.subject.name }}</td>
+                  <td>{{ session.group.teacher.full_name }}</td>
+                  <td>-</td> {# Placeholder for Room #}
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center">لا توجد حصص قادمة أو جارية لليوم.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">روابط سريعة</h2>
+    </div>
+    <div class="card-body">
+      <div class="quick-actions" style="display: flex;flex-wrap: wrap;justify-content: space-evenly;">
+        <a href="/students/add/" class="btn btn-primary mb-2">
+          <i class="fas fa-user-plus"></i>
+          تسجيل طالب جديد
+        </a>
+        <a href="/teachers/add/" class="btn btn-primary mb-2">
+          <i class="fas fa-user-tie"></i>
+          تسجيل مدرس جديد
+        </a>
+        <a href="/groups/add/" class="btn btn-primary mb-2">
+          <i class="fas fa-users"></i>
+          إنشاء فوج جديد
+        </a>
+        <a href="/attendance/" class="btn btn-primary mb-2">
+          <i class="fas fa-clipboard-check"></i>
+          تسجيل الحضور
+        </a>
+        <a href="/payments/report/" class="btn btn-primary mb-2">
+          <i class="fas fa-chart-line"></i>
+          التقارير المالية
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

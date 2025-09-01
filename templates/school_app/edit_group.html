@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل بيانات الفوج{% endblock %}
+
+{% block page_title %}تعديل بيانات الفوج: {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">تعديل معلومات الفوج</h2>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{% url 'edit_group' group.id %}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="form-group">
+        <label for="{{ form.name.id_for_label }}">{{ form.name.label }}:</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}:</label>
+        {{ form.subject }}
+        {% if form.subject.errors %}<div class="invalid-feedback d-block">{{ form.subject.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.teacher.id_for_label }}">{{ form.teacher.label }}:</label>
+        {{ form.teacher }}
+        {% if form.teacher.errors %}<div class="invalid-feedback d-block">{{ form.teacher.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.academic_levels.id_for_label }}">{{ form.academic_levels.label }}:</label>
+        {{ form.academic_levels }}
+        {% if form.academic_levels.help_text %}<small class="form-text text-muted">{{ form.academic_levels.help_text }}</small>{% endif %}
+        {% if form.academic_levels.errors %}<div class="invalid-feedback d-block">{{ form.academic_levels.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.price_per_4_sessions.id_for_label }}">{{ form.price_per_4_sessions.label }}:</label>
+        {{ form.price_per_4_sessions }}
+        {% if form.price_per_4_sessions.errors %}<div class="invalid-feedback d-block">{{ form.price_per_4_sessions.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.session_day.id_for_label }}">{{ form.session_day.label }}:</label>
+        {{ form.session_day }}
+        {% if form.session_day.errors %}<div class="invalid-feedback d-block">{{ form.session_day.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.session_start_time.id_for_label }}">{{ form.session_start_time.label }}:</label>
+        {{ form.session_start_time }}
+        {% if form.session_start_time.help_text %}<small class="form-text text-muted">{{ form.session_start_time.help_text }}</small>{% endif %}
+        {% if form.session_start_time.errors %}<div class="invalid-feedback d-block">{{ form.session_start_time.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.session_duration.id_for_label }}">{{ form.session_duration.label }}:</label>
+        {{ form.session_duration }}
+        {% if form.session_duration.errors %}<div class="invalid-feedback d-block">{{ form.session_duration.errors }}</div>{% endif %}
+      </div>
+
+      <div class="card-footer text-right">
+        <a href="{% url 'group_detail' group.id %}" class="btn btn-secondary">إلغاء</a>
+        <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const academicLevelsSelectEdit = document.querySelector('.choices-multi-select');
+  // Or by ID: const academicLevelsSelectEdit = document.getElementById('id_academic_levels');
+  if (academicLevelsSelectEdit) {
+    const choicesInstanceEdit = new Choices(academicLevelsSelectEdit, {
+      removeItemButton: true,
+      placeholder: true,
+      placeholderValue: 'اختر المستويات...',
+      // searchPlaceholderValue: "ابحث عن مستوى",
+      // itemSelectText: "اضغط للاختيار", // Customize text if needed
+    });
+  }
+});
+</script>
+{% endblock %}

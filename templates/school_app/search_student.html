@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}البحث عن طالب{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="GET" action="{% url 'search_student' %}" class="mb-4">
+      <div class="input-group">
+        <input type="text" class="form-control" name="q" placeholder="ابحث بالاسم أو الرقم التعريفي..." value="{{ query }}">
+        <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">بحث</button>
+        </div>
+      </div>
+    </form>
+
+    {% if query %}
+      {% if students_results %}
+        <h4 class="mb-3">نتائج البحث عن "{{ query }}": ({{ students_results.count }} نتيجة)</h4>
+        <div class="table-container">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>الرقم التعريفي (ID)</th>
+                <th>الاسم الكامل</th>
+                <th>المستوى الدراسي</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in students_results %}
+                <tr>
+                  <td>{{ student.id }}</td>
+                  <td>
+                    <a href="{% url 'student_detail' student.id %}">{{ student.full_name }}</a>
+                  </td>
+                  <td>{{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</td>
+                  <td>
+                    <a href="{% url 'student_detail' student.id %}" class="btn btn-sm btn-info">عرض التفاصيل</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-warning" role="alert">
+          لم يتم العثور على طلاب يطابقون بحثك عن "{{ query }}".
+        </div>
+      {% endif %}
+    {% else %}
+      <p class="text-center text-muted">الرجاء إدخال اسم الطالب أو رقمه التعريفي في شريط البحث أعلاه.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

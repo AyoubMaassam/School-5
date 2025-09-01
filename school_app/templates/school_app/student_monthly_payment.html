@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}الدفع الشهري للطالب - {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block page_title %}{{ page_title|default:"الدفع الشهري للطالب" }}{% endblock %}
+
+{% block header_actions %}
+{# This block exists in base.html, define it empty or with specific actions if needed later #}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message|safe }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">معلومات الطالب</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>الاسم:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+            <p><strong>المستوى الدراسي:</strong> {{ student.academic_level.get_category_display }} - {{ student.academic_level.name }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">اختيار الفوج وتفاصيل الدفع</h3>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'student_monthly_payment' student.id %}" class="mb-3">
+                <div class="form-row align-items-end">
+                    <div class="col-md-8">
+                        <label for="group_id_select">اختر الفوج:</label>
+                        <select name="group_id" id="group_id_select" class="form-control" onchange="this.form.submit()">
+                            <option value="">--- اختر فوجاً ---</option>
+                            {% for group_item in enrolled_groups %}
+                                <option value="{{ group_item.id }}" {% if selected_group and selected_group.id == group_item.id %}selected{% endif %}>
+                                    {{ group_item.name }} ({{ group_item.subject.name }} - {{ group_item.teacher.first_name }} {{ group_item.teacher.last_name }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mt-2 mt-md-0">
+                        <noscript><button type="submit" class="btn btn-primary btn-block">عرض الفوج</button></noscript>
+                    </div>
+                </div>
+            </form>
+
+            {% if selected_group %}
+                <hr>
+                <h4>تفاصيل الفوج المبدئية (جاري الاستعادة): {{ selected_group.name }}</h4>
+                <p><strong>المادة:</strong> {{ selected_group.subject.name }}</p>
+                <p><strong>المدرس:</strong> {{ selected_group.teacher.first_name }} {{ selected_group.teacher.last_name }}</p>
+                <p><strong>سعر الـ 4 حصص:</strong> {{ selected_group.price_per_4_sessions|floatformat:2 }} دج (يعني {{ price_per_session|floatformat:2 }} دج للحصة الواحدة)</p>
+                <p><em>(سيتم استعادة باقي تفاصيل الدفع والحصص في الخطوات التالية)</em></p>
+            {% else %}
+                {% if request.GET.group_id %}
+                    <p class="text-danger">الفوج المحدد غير موجود أو الطالب غير مسجل فيه.</p>
+                {% else %}
+                    <p class="text-info">الرجاء اختيار فوج لعرض تفاصيل الدفع.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-3">
+      <a href="{% url 'student_detail' student.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> العودة إلى ملف الطالب
+      </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# This block also exists in base.html, define it empty or with specific JS if needed later #}
+</script>
+{% endblock %}

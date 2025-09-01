@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">اختيار الفوج</h3>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'attendance_record' %}" class="form-inline">
+                <div class="form-group mr-2">
+                    <label for="group_id" class="mr-2">الفوج:</label>
+                    <select name="group_id" id="group_id" class="form-control" onchange="this.form.submit()">
+                        <option value="">--- اختر فوجاً ---</option>
+                        {% for group in groups_for_today %}
+                            <option value="{{ group.id }}" {% if selected_group and selected_group.id == group.id %}selected{% endif %}>
+                                {{ group.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_group %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="card-title mb-0">قائمة الحاضرين ({{ present_students.count }})</h4>
+                </div>
+                <div class="card-body">
+                    {% if present_students %}
+                        <ul class="list-group">
+                            {% for student in present_students %}
+                                <li class="list-group-item">{{ student.full_name }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>لا يوجد طلاب حاضرون.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">قائمة الغائبين ({{ absent_students.count }})</h4>
+                </div>
+                <div class="card-body">
+                    {% if absent_students %}
+                        <ul class="list-group">
+                            {% for student in absent_students %}
+                                <li class="list-group-item">{{ student.full_name }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>لا يوجد طلاب غائبون.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

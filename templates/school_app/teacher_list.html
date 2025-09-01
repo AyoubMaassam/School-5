@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة المعلمين{% endblock %}
+{% block page_title %}{{ page_title|default:"قائمة المعلمين" }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'add_teacher' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> إضافة معلم جديد
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="get" action="{% url 'teacher_list' %}" class="mb-3">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="ابحث بالاسم أو المادة..." value="{{ search_query|default:'' }}">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="submit">
+            <i class="fas fa-search"></i> بحث
+          </button>
+        </div>
+      </div>
+    </form>
+    {% if teachers %}
+      <div class="table-container">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>الاسم الكامل</th>
+              <th>رقم الهاتف</th>
+              <th>المادة الأساسية</th>
+              <th>تاريخ الإضافة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for teacher in teachers %}
+              <tr>
+                <td>{{ teacher.full_name }}</td>
+                <td dir="ltr">{{ teacher.phone_number }}</td>
+                <td>{{ teacher.subject.name }}</td>
+                <td>{{ teacher.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                  {# <a href="#" class="btn btn-sm btn-info">عرض</a> Placeholder for future teacher_detail view #}
+                  <a href="{% url 'edit_teacher' teacher.id %}" class="btn btn-sm btn-warning" title="تعديل"> <i class="bi bi-pencil-fill"></i><span class="sr-only">تعديل</span></a>
+                  <a href="{% url 'teacher_monthly_payment' teacher_id=teacher.id %}" class="btn btn-sm btn-success" title="دفع المستحقات"><i class="bi bi-cash-coin"></i><span class="sr-only">دفع المستحقات</span></a>
+                  <a href="{% url 'teacher_financial_detail' teacher.id %}" class="btn btn-sm btn-outline-primary" title="عرض التفاصيل المالية"><i class="bi bi-currency-dollar"></i></a>
+                  <form action="{% url 'delete_teacher' teacher.id %}" method="post" style="display: inline;" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف هذا المدرس؟ قد يؤدي هذا إلى مشاكل إذا كان المدرس مرتبطاً بأفواج حالية.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm" title="حذف"><i class="bi bi-trash-fill"></i><span class="sr-only">حذف</span></button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-center text-muted">لا يوجد معلمون مسجلون حالياً.</p>
+      <div class="text-center mt-3">
+         <a href="{% url 'add_teacher' %}" class="btn btn-primary">إضافة معلم جديد</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

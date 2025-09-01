@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل الفوج: {{ group.name }}{% endblock %}
+{% block page_title %}{{ page_title|default:"تفاصيل الفوج" }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'add_session' %}?group_id={{ group.id }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> إضافة حصة جديدة لهذا الفوج
+  </a>
+  <a href="{% url 'edit_group' group.id %}" class="btn btn-warning" style="margin-left: 5px;"><i class="fas fa-edit"></i> تعديل بيانات الفوج</a>
+  <form action="{% url 'delete_group' group.id %}" method="post" style="display: inline-block;" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف هذا الفوج؟ سيتم حذف جميع الحصص المتعلقة به أيضاً.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash-alt"></i> حذف الفوج
+      </button>
+  </form>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">معلومات الفوج</h5>
+        <p><strong>اسم الفوج:</strong> {{ group.name }}</p>
+        <p><strong>المادة:</strong> {{ group.subject.name }}</p>
+        <p><strong>المعلم:</strong> {{ group.teacher.full_name }}</p>
+        <p><strong>السعر لكل 4 حصص (دج):</strong> {{ group.price_per_4_sessions }}</p>
+        <p><strong>يوم الحصة:</strong> {{ group.get_session_day_display }}</p>
+        <p><strong>وقت الحصة:</strong> {{ group.session_start_time|time:"H:i" }} (المدة: {{ group.session_duration }} ساعات)</p>
+        <p><strong>تاريخ الإنشاء:</strong> {{ group.created_at|date:"Y-m-d H:i" }}</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">المستويات الدراسية</h5>
+        {% if group.academic_levels.all %}
+          <ul class="list-group">
+            {% for level in group.academic_levels.all %}
+              <li class="list-group-item">{{ level.name }} ({{ level.get_category_display }})</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">لم يتم تحديد مستويات دراسية.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">الطلاب المسجلون ({{ group.students.count }})</h5>
+        {% if group.students.all %}
+          <ul class="list-group">
+            {% for student in group.students.all %}
+              <li class="list-group-item">
+                <a href="{% url 'student_detail' student.id %}">{{ student.full_name }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">لا يوجد طلاب مسجلون حالياً في هذا الفوج.</p>
+        {% endif %}
+        {# Add link to enroll students later #}
+        {# <a href="{% url 'enroll_students_in_group' group.id %}" class="btn btn-primary mt-3">تسجيل طلاب جدد في الفوج</a> #}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Sessions for this group can be listed here or linked to session_list filtered by group #}
+{# Consider adding a card for "الحصص المجدولة لهذا الفوج" linking to session_list or an API call #}
+
+<div class="mt-3">
+  <a href="{% url 'group_list' %}" class="btn btn-secondary">العودة إلى قائمة الأفواج</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة الحصص{% endblock %}
+{% block page_title %}{{ page_title|default:"قائمة الحصص" }}{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'add_session' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> إضافة حصة جديدة
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="get" action="{% url 'session_list' %}" class="mb-3">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="ابحث باسم الفوج أو التاريخ (YYYY-MM-DD)..." value="{{ search_query|default:'' }}">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="submit">
+            <i class="fas fa-search"></i> بحث
+          </button>
+        </div>
+      </div>
+    </form>
+    {% if sessions %}
+      <div class="table-container">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>الفوج</th>
+              <th>التاريخ</th>
+              <th>وقت البدء</th>
+              <th>المدة (ساعات)</th>
+              <th>تاريخ الإنشاء</th>
+              <th>عدد الحضور</th>
+              <th>عدد الغياب</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for session in sessions %}
+              <tr>
+                <td>{{ session.group.name }}</td>
+                <td>{{ session.date|date:"Y-m-d" }}</td>
+                <td>{{ session.start_time|time:"H:i" }}</td>
+                <td>{{ session.duration }}</td>
+                <td>{{ session.created_at|date:"Y-m-d H:i" }}</td>
+                <td>{{ session.present_students_count }}</td>
+                <td>{{ session.absent_students_count }}</td>
+                <td>
+                  <a href="{% url 'manage_session_attendance' session.id %}" class="btn btn-sm btn-info" title="إدارة الحضور"> <i class="bi bi-calendar-check-fill"></i><span class="sr-only">إدارة الحضور</span></a>
+                  <a href="{% url 'edit_session' session.id %}" class="btn btn-sm btn-warning" title="تعديل"> <i class="bi bi-pencil-fill"></i><span class="sr-only">تعديل</span></a>
+                  <form action="{% url 'delete_session' session.id %}" method="post" style="display: inline; margin-left: 5px;" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف هذه الحصة؟ سيتم حذف جميع سجلات الحضور المتعلقة بها أيضاً.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm" title="حذف"><i class="bi bi-trash-fill"></i><span class="sr-only">حذف</span></button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-center text-muted">لا توجد حصص مجدولة حالياً.</p>
+      <div class="text-center mt-3">
+         <a href="{% url 'add_session' %}" class="btn btn-primary">إضافة حصة جديدة</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>طباعة QR Code الطالب</title>
+    <style>
+        @page {
+            size: 20mm 25mm; /* Adjusted for QR code and name */
+            margin: 0;
+        }
+        body {
+            font-family: 'Tahoma', 'Helvetica', 'Arial', sans-serif;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .qr-code-container {
+            width: 20mm;
+            height: 20mm;
+            margin-bottom: 1mm;
+        }
+        .qr-code-container img {
+            width: 100%;
+            height: 100%;
+        }
+        .student-name {
+            font-size: 8pt; /* Adjusted font size */
+            font-weight: bold;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body onload="window.print();">
+
+    <div class="qr-code-container">
+        <img src="data:image/png;base64,{{ qr_code_image_base64 }}" alt="QR Code">
+    </div>
+    <p class="student-name">{{ student.full_name }}</p>
+
+</body>
+</html>

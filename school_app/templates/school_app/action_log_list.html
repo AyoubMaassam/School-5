@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>{{ page_title }}</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>الوقت والتاريخ</th>
+                        <th>نوع الإجراء</th>
+                        <th>الاسم/المعرف</th>
+                        <th>تفاصيل إضافية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.action_time|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ log.get_action_type_display|default:log.action_type }}</td> {# Assuming action_type is human-readable enough, or we can create choices for it in the model if needed #}
+                        <td>{{ log.object_name|default:"غير متوفر" }}</td>
+                        <td>{{ log.details|linebreaksbr|default:"لا توجد تفاصيل" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">لا توجد سجلات لعرضها.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if logs.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if logs.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1">&laquo; أول صفحة</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ logs.previous_page_number }}">السابق</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo; أول صفحة</span></li>
+                    <li class="page-item disabled"><span class="page-link">السابق</span></li>
+                {% endif %}
+
+                {% for num in logs.paginator.page_range %}
+                    {% if logs.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }} <span class="sr-only">(الحالية)</span></span></li>
+                    {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if logs.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ logs.next_page_number }}">التالي</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ logs.paginator.num_pages }}">آخر صفحة &raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">التالي</span></li>
+                    <li class="page-item disabled"><span class="page-link">آخر صفحة &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

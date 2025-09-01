@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}التقارير المالية{% endblock %}
+
+{% block page_title %}التقارير المالية{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">اختيار الفترة</h2>
+  </div>
+  <div class="card-body">
+    <div class="form-group">
+      <label for="period-select">الفترة</label>
+      <select id="period-select" name="period" class="form-control">
+        <option value="current_month" {% if period_type_selected == 'current_month' %}selected{% endif %}>الشهر الحالي</option>
+        <option value="last_month" {% if period_type_selected == 'last_month' %}selected{% endif %}>الشهر الماضي</option>
+        <option value="current_year" {% if period_type_selected == 'current_year' %}selected{% endif %}>السنة الحالية</option>
+        <option value="custom" {% if period_type_selected == 'custom' %}selected{% endif %}>فترة مخصصة</option>
+      </select>
+    </div>
+    
+    <div id="custom-period" class="form-group row" style="display: {% if period_type_selected == 'custom' %}flex{% else %}none{% endif %};">
+      <div class="col-md-6 mb-2 mb-md-0">
+        <label for="start-date">من تاريخ</label>
+        <input type="date" id="start-date" name="start_date" class="form-control" value="{{ start_date_selected|default:'' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="end-date">إلى تاريخ</label>
+        <input type="date" id="end-date" name="end_date" class="form-control" value="{{ end_date_selected|default:'' }}">
+      </div>
+    </div>
+    
+    <button id="generate-report-btn" class="btn btn-primary">عرض التقرير</button>
+    {% if errors %}
+      <div class="alert alert-danger mt-3">
+          {% for error in errors %}
+              <p>{{ error }}</p>
+          {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="financial-report" class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">{{ report_period_display|default:"التقرير المالي" }}</h2>
+  </div>
+  <div class="card-body">
+    <div class="dashboard-cards mb-4">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ total_income|floatformat:2 }}</div>
+          <div class="stat-label">إجمالي الإيرادات (دج)</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: #f5365c;">
+          <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ total_expenses|floatformat:2 }}</div>
+          <div class="stat-label">إجمالي المصروفات (دج)</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: #2cce89;">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ net_income|floatformat:2 }}</div>
+          <div class="stat-label">صافي الدخل (دج)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">تفاصيل الإيرادات</h3>
+          </div>
+          <div class="card-body">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>النوع</th>
+                    <th>المبلغ (دج)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>رسوم التسجيل الأولية</td>
+                    <td>{{ income_from_registration|floatformat:2 }}</td>
+                  </tr>
+                  <tr>
+                    <td>رسوم الحصص</td>
+                    <td>{{ income_from_sessions|floatformat:2 }}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th>المجموع</th>
+                    <th>{{ total_income|floatformat:2 }}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">تفاصيل المصروفات</h3>
+          </div>
+          <div class="card-body">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>النوع</th>
+                    <th>المبلغ (دج)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>تعويضات المدرسين</td>
+                    <td>{{ total_expenses|floatformat:2 }}</td>
+                  </tr>
+                  <!-- Add other expense types here if any -->
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th>المجموع</th>
+                    <th>{{ total_expenses|floatformat:2 }}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income by Group Section -->
+    <div class="card mt-4 mb-4">
+      <div class="card-header">
+        <h3 class="card-title">تفاصيل الإيرادات حسب الفوج</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>اسم الفوج</th>
+                <th>المادة</th>
+                <th>المدرس</th>
+                <th>إجمالي الإيرادات (دج)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for group_data in income_by_group_data %}
+                <tr>
+                  <td>{{ group_data.name }}</td>
+                  <td>{{ group_data.subject_name }}</td>
+                  <td>{{ group_data.teacher_name }}</td>
+                  <td>{{ group_data.income|floatformat:2 }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center">لا توجد بيانات إيرادات للأفواج لهذه الفترة.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- End Income by Group Section -->
+
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">إحصائيات إضافية</h2>
+  </div>
+  <div class="card-body">
+    <div class="dashboard-cards">
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: #5e72e4;">
+          <i class="fas fa-user-graduate"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ new_students_count }}</div>
+          <div class="stat-label">طلاب جدد</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: #11cdef;">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ new_groups_count }}</div>
+          <div class="stat-label">أفواج جديدة</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: #fb6340;">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ completed_sessions_count }}</div>
+          <div class="stat-label">حصص مكتملة</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const periodSelect = document.getElementById('period-select');
+    const customPeriodDiv = document.getElementById('custom-period');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const generateReportBtn = document.getElementById('generate-report-btn');
+    
+    // Show/hide custom period inputs based on current selection (e.g. after page load with params)
+    function toggleCustomPeriodDisplay() {
+        if (periodSelect.value === 'custom') {
+            customPeriodDiv.style.display = 'flex'; // or 'block' if you prefer
+        } else {
+            customPeriodDiv.style.display = 'none';
+        }
+    }
+    
+    if (periodSelect) {
+        periodSelect.addEventListener('change', toggleCustomPeriodDisplay);
+        toggleCustomPeriodDisplay(); // Call on page load
+    }
+
+    if (generateReportBtn) {
+      generateReportBtn.addEventListener('click', function() {
+        const period = periodSelect.value;
+        let url = `{% url 'payment_report' %}?period=${period}`;
+        
+        if (period === 'custom') {
+          const startDate = startDateInput.value;
+          const endDate = endDateInput.value;
+          
+          if (!startDate || !endDate) {
+            showAlert('لتحديد فترة مخصصة، يرجى إدخال تاريخ البدء وتاريخ الانتهاء.', 'warning');
+            return;
+          }
+          if (new Date(startDate) > new Date(endDate)) {
+            showAlert('تاريخ البدء لا يمكن أن يكون بعد تاريخ الانتهاء.', 'warning');
+            return;
+          }
+          url += `&start_date=${startDate}&end_date=${endDate}`;
+        }
+        
+        window.location.href = url;
+      });
+    }
+  });
+</script>
+{% endblock %}
