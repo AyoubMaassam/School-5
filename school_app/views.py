@@ -1385,7 +1385,7 @@ def api_record_attendance(request):
                 student.prepaid_balance -= price_per_session
                 attendance.student_paid_for_session = True
                 student.save(update_fields=['prepaid_balance'])
-                payment_status_message = f"تم الدفع من الرصيد المسبق. الرصيد المتبقي: {student.prepaid_balance.quantize(Decimal('0.01'))} دج"
+                payment_status_message = "" # Set to empty to suppress notification, as per user request
             elif attendance.student_paid_for_session:
                 payment_status_message = "الحصة مدفوعة بالفعل"
             else: # Not enough balance
@@ -2313,7 +2313,7 @@ def api_record_attendance_by_student(request):
                 student.prepaid_balance -= price_per_session
                 attendance.student_paid_for_session = True
                 student.save(update_fields=['prepaid_balance'])
-                payment_status_message = f"تم الدفع من الرصيد المسبق. الرصيد المتبقي: {student.prepaid_balance.quantize(Decimal('0.01'))} دج"
+                payment_status_message = "" # Set to empty to suppress notification, as per user request
             elif attendance.student_paid_for_session:
                 payment_status_message = "الحصة مدفوعة بالفعل"
             else: # Not enough balance
